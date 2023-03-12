@@ -3,9 +3,10 @@
 , dependencies =
   [ "deku"
   , "effect"
-  , "hyrule"
   , "foldable-traversable"
+  , "hyrule"
   , "prelude"
+  , "qualified-do"
   , "web-html"
   ]
 , packages = ./packages.dhall
