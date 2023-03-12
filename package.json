@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite dev",
+    "purs": "spago build --watch",
     "build": "spago build && vite build"
   },
   "browserslist": "defaults, not ie <= 11",
