@@ -83,7 +83,7 @@ main = runInBody Deku.do
             Alt.do
               klass_ "rounded-full border border-red-400 bg-red-500/40 w-6 h-6"
               style $ pos <#> \{ x, y } ->
-                let p x = toNumber x * 1.5 in
+                let p = toNumber >>> (_ * 1.5) in
                 i "translate: " (p x) "rem " (p y) "rem;"
           []
         ]
