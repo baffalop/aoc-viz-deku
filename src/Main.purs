@@ -7,6 +7,7 @@ import Prelude
 
 import Data.Int (floor, toNumber)
 import Data.Interpolate (i)
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((!:=), (<:=>))
 import Deku.Attributes (klass_, style)
@@ -15,10 +16,16 @@ import Deku.Core (fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useRef, useState)
-import Deku.Listeners (keyDown_, slider_)
+import Deku.Lifecycle (onDidMount)
+import Deku.Listeners (slider_)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import QualifiedDo.Alt as Alt
+import Web.Event.Event (EventType(..))
+import Web.Event.EventTarget (addEventListener, eventListener)
+import Web.HTML (window)
+import Web.HTML.HTMLDocument as Document
+import Web.HTML.Window (document)
 import Web.UIEvent.KeyboardEvent as Key
 
 type Coord = { x :: Int, y :: Int }
@@ -43,7 +50,18 @@ main = runInBody Deku.do
       currentPos <- posRef
       setPos $ currentPos { y = currentPos.y + dy }
 
-  fixed
+    registerListeners :: Effect Unit
+    registerListeners = do
+      doc <- window >>= document
+      listener <- eventListener $ Key.fromEvent >>> (_ <#> Key.key) >>> case _ of
+        Just "ArrowLeft" -> moveX (-1)
+        Just "ArrowRight" -> moveX 1
+        Just "ArrowUp" -> moveY (-1)
+        Just "ArrowDown" -> moveY 1
+        _ -> pure unit
+      addEventListener (EventType "keydown") listener false (Document.toEventTarget doc)
+
+  onDidMount registerListeners $ fixed
     [ D.div
         Alt.do
           klass_ $ containerKlass <> " space-x-4 max-w-max"
@@ -61,14 +79,6 @@ main = runInBody Deku.do
     , D.div
         Alt.do
           klass_ $ containerKlass <> " flex-1 flex items-center justify-center"
-          D.Tabindex !:= "0"
-          keyDown_ $ Key.key >>> case _ of
-            "ArrowLeft" -> moveX (-1)
-            "ArrowRight" -> moveX 1
-            "ArrowUp" -> moveY (-1)
-            "ArrowDown" -> moveY 1
-            _ -> pure unit
-
         [ D.div
             Alt.do
               klass_ "rounded-full border border-red-400 bg-red-500/40 w-6 h-6"
