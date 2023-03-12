@@ -81,10 +81,10 @@ main = runInBody Deku.do
           klass_ $ containerKlass <> " flex-1 flex items-center justify-center"
         [ D.div
             Alt.do
-              klass_ "rounded-full border border-red-400 bg-red-500/40 w-6 h-6"
+              klass_ "rounded-full border border-red-400 bg-red-500/40 w-6 h-6 transition-transform duration-200"
               style $ pos <#> \{ x, y } ->
                 let p = toNumber >>> (_ * 1.5) in
-                i "translate: " (p x) "rem " (p y) "rem;"
+                i "transform: translate("(p x)"rem, "(p y)"rem);"
           []
         ]
     ]
