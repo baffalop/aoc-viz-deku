@@ -5,6 +5,7 @@ module Main
 
 import Prelude
 
+import Data.Compactable (compact)
 import Data.Int (floor, toNumber)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..))
@@ -15,18 +16,13 @@ import Deku.Control (text)
 import Deku.Core (fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useRef, useState)
-import Deku.Lifecycle (onDidMount)
+import Deku.Hooks (useState)
 import Deku.Listeners (slider_)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
+import FRP.Event (Event, fold)
+import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
-import Web.Event.Event (EventType(..))
-import Web.Event.EventTarget (addEventListener, eventListener)
-import Web.HTML (window)
-import Web.HTML.HTMLDocument as Document
-import Web.HTML.Window (document)
-import Web.UIEvent.KeyboardEvent as Key
 
 type Coord = { x :: Int, y :: Int }
 
@@ -36,32 +32,12 @@ origin = { x: 0, y: 0 }
 main :: Effect Unit
 main = runInBody Deku.do
   setN /\ n <- useState 10
-  setPos /\ pos <- useState origin
-  posRef <- useRef origin pos
 
   let
-    moveX :: Int -> Effect Unit
-    moveX dx = do
-      currentPos <- posRef
-      setPos $ currentPos { x = currentPos.x + dx }
+    pos :: Event Coord
+    pos = fold add origin (compact $ vectorFromKey <$> Key.down)
 
-    moveY :: Int -> Effect Unit
-    moveY dy = do
-      currentPos <- posRef
-      setPos $ currentPos { y = currentPos.y + dy }
-
-    registerListeners :: Effect Unit
-    registerListeners = do
-      doc <- window >>= document
-      listener <- eventListener $ Key.fromEvent >>> (_ <#> Key.key) >>> case _ of
-        Just "ArrowLeft" -> moveX (-1)
-        Just "ArrowRight" -> moveX 1
-        Just "ArrowUp" -> moveY (-1)
-        Just "ArrowDown" -> moveY 1
-        _ -> pure unit
-      addEventListener (EventType "keydown") listener false (Document.toEventTarget doc)
-
-  onDidMount registerListeners $ fixed
+  fixed
     [ D.div
         Alt.do
           klass_ $ containerKlass <> " space-x-4 max-w-max"
@@ -91,3 +67,17 @@ main = runInBody Deku.do
 
 containerKlass :: String
 containerKlass = "p-4 bg-slate-700"
+
+add :: Coord -> Coord -> Coord
+add c1 c2 =
+  { x: c1.x + c2.x
+  , y: c1.y + c2.y
+  }
+
+vectorFromKey :: String -> Maybe Coord
+vectorFromKey = case _ of
+  "ArrowUp" -> Just { x: 0, y: -1 }
+  "ArrowDown" -> Just { x: 0, y: 1 }
+  "ArrowLeft" -> Just { x: -1, y: 0 }
+  "ArrowRight" -> Just { x: 1, y: 0 }
+  _ -> Nothing
