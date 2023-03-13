@@ -5,15 +5,18 @@ module Main
 
 import Prelude
 
+import Control.Alt ((<|>))
 import Data.Compactable (compact)
 import Data.Int (floor, toNumber)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..))
+import Data.Number (abs)
+import Data.Ord (signum)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((!:=), (<:=>))
 import Deku.Attributes (klass_, style)
 import Deku.Control (text)
-import Deku.Core (fixed)
+import Deku.Core (fixed, Nut)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useState)
@@ -34,8 +37,11 @@ main = runInBody Deku.do
   setN /\ n <- useState 10
 
   let
-    pos :: Event Coord
-    pos = fold add origin (compact $ vectorFromKey <$> Key.down)
+    head :: Event Coord
+    head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
+
+    tail :: Event Coord
+    tail = fold follow origin head
 
   fixed
     [ D.div
@@ -54,16 +60,32 @@ main = runInBody Deku.do
         ]
     , D.div
         Alt.do
-          klass_ $ containerKlass <> " flex-1 flex items-center justify-center"
-        [ D.div
-            Alt.do
-              klass_ "rounded-full border border-red-400 bg-red-500/40 w-6 h-6 transition-transform duration-200"
-              style $ pos <#> \{ x, y } ->
-                let p = toNumber >>> (_ * 1.5) in
-                i "transform: translate("(p x)"rem, "(p y)"rem);"
-          []
+          klass_ $ containerKlass <> " flex-1 flex items-center justify-center relative"
+        [ point head "border-red-400 bg-red-500/40"
+        , point tail "border-blue-400 bg-blue-500/40 delay-[50ms]"
         ]
     ]
+
+point :: Event Coord -> String -> Nut
+point coord klass =
+  D.div
+    Alt.do
+      klass_ $
+        "rounded-full border w-6 h-6 transition-transform duration-200 absolute left-1/2 top-1/2 "
+        <> klass
+      style $ coord <#> \{ x, y } ->
+        i "transform: translate(calc("(p x)"rem - 50%), calc("(p y)"rem - 50%));"
+    []
+  where
+    p = toNumber >>> (_ * 1.5)
+
+follow :: Coord -> Coord -> Coord
+follow follower target =
+  add follower $ if shouldFollow then { x: signum vx, y: signum vy } else origin
+  where
+    shouldFollow = abs (toNumber vx) > 1.0 || abs (toNumber vy) > 1.0
+    vx = target.x - follower.x
+    vy = target.y - follower.y
 
 containerKlass :: String
 containerKlass = "p-4 bg-slate-700"
