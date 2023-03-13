@@ -7,10 +7,10 @@ import Prelude
 
 import Control.Alt ((<|>))
 import Data.Compactable (compact)
-import Data.Int (floor, toNumber)
+import Data.Int (floor, toNumber, trunc)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..))
-import Data.Number (abs)
+import Data.Number (abs, sqrt)
 import Data.Ord (signum)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((!:=), (<:=>))
@@ -27,9 +27,11 @@ import FRP.Event (Event, fold)
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 
-type Coord = { x :: Int, y :: Int }
+type Point = { x :: Int, y :: Int }
 
-origin :: Coord
+type Coord = { x :: Number, y :: Number }
+
+origin :: Point
 origin = { x: 0, y: 0 }
 
 main :: Effect Unit
@@ -37,10 +39,10 @@ main = runInBody Deku.do
   setN /\ n <- useState 10
 
   let
-    head :: Event Coord
+    head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
-    tail :: Event Coord
+    tail :: Event Point
     tail = fold follow origin head
 
   fixed
@@ -61,42 +63,63 @@ main = runInBody Deku.do
     , D.div
         Alt.do
           klass_ $ containerKlass <> " flex-1 flex items-center justify-center relative"
-        [ point head "border-red-400 bg-red-500/40"
-        , point tail "border-blue-400 bg-blue-500/40 delay-[50ms]"
+        [ link ({ head: _, neck: _ } <$> head <*> tail) "border-red-400 bg-red-500/40"
         ]
     ]
 
-point :: Event Coord -> String -> Nut
-point coord klass =
+link :: Event { head :: Point, neck :: Point } -> String -> Nut
+link coords klass =
   D.div
     Alt.do
       klass_ $
-        "rounded-full border w-6 h-6 transition-transform duration-200 absolute left-1/2 top-1/2 "
+        "rounded-full border w-6 h-6 transition-all duration-200 absolute left-1/2 top-1/2 "
         <> klass
-      style $ coord <#> \{ x, y } ->
-        i "transform: translate(calc("(p x)"rem - 50%), calc("(p y)"rem - 50%));"
+      style $ transformFrom <$> coords
     []
   where
-    p = toNumber >>> (_ * 1.5)
+    transformFrom { head, neck } =
+      let
+        d = delta neck head
+        width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * 1.5
+        turns = case d.x, d.y of
+          (-1.0), 0.0 -> 0.5
+          dx, dy -> (dx - 2.0) * (-0.125) * signum dy
+      in
+      i "width: "width"rem; \
+        \transform: \
+          \translate("(p neck.x)"rem, "(p neck.y)"rem) \
+          \rotate("turns"turn); \
+        \transform-origin: 0.75rem 0.75rem;"
 
-follow :: Coord -> Coord -> Coord
+    p v = (toNumber v * 1.5) - 0.75
+
+follow :: Point -> Point -> Point
 follow follower target =
-  add follower $ if shouldFollow then { x: signum vx, y: signum vy } else origin
+  add follower $ if shouldFollow then
+    { x: trunc $ signum d.x
+    , y: trunc $ signum d.y
+    }
+    else origin
   where
-    shouldFollow = abs (toNumber vx) > 1.0 || abs (toNumber vy) > 1.0
-    vx = target.x - follower.x
-    vy = target.y - follower.y
+    shouldFollow = abs d.x > 1.0 || abs d.y > 1.0
+    d = delta follower target
 
 containerKlass :: String
 containerKlass = "p-4 bg-slate-700"
 
-add :: Coord -> Coord -> Coord
+add :: Point -> Point -> Point
 add c1 c2 =
   { x: c1.x + c2.x
   , y: c1.y + c2.y
   }
 
-vectorFromKey :: String -> Maybe Coord
+delta :: Point -> Point -> Coord
+delta from to =
+  { x: toNumber $ to.x - from.x
+  , y: toNumber $ to.y - from.y
+  }
+
+vectorFromKey :: String -> Maybe Point
 vectorFromKey = case _ of
   "ArrowUp" -> Just { x: 0, y: -1 }
   "ArrowDown" -> Just { x: 0, y: 1 }
