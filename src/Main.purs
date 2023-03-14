@@ -29,6 +29,7 @@ import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold)
 import FRP.Event.Keyboard as Key
+import PointFree ((<..))
 import QualifiedDo.Alt as Alt
 
 type Point = { x :: Int, y :: Int }
@@ -40,7 +41,7 @@ origin :: Point
 origin = { x: 0, y: 0 }
 
 windowSize :: Int
-windowSize = 5
+windowSize = 10
 
 main :: Effect Unit
 main = runInBody Deku.do
@@ -53,8 +54,8 @@ main = runInBody Deku.do
     tail :: Event (Array Point)
     tail = fold trailBehind (Array.replicate windowSize origin) head
 
-    rope :: Event (Array Point)
-    rope = (:) <$> head <*> tail
+    rope :: Event (Array Segment)
+    rope = (segmentsOf <.. (:)) <$> head <*> tail
 
   fixed
     [ D.div
@@ -74,14 +75,11 @@ main = runInBody Deku.do
     , D.div
         Alt.do
           klass_ $ containerKlass <> " flex-1 relative"
-        $ 0 .. windowSize <#> \i ->
-            ropePoint "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
+        $ 0 .. (windowSize - 1) <#> \i ->
+            ropeSegment "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
     ]
   where
     containerKlass = "p-4 bg-slate-700"
-
-ropePoint :: String -> Event Point -> Nut
-ropePoint klass point = ropeSegment klass $ point <#> \p -> { head: p, tail: p }
 
 ropeSegment :: String -> Event Segment -> Nut
 ropeSegment klass points =
@@ -128,6 +126,9 @@ follow follower target = do
     }
   where
     d = delta follower target
+
+segmentsOf :: Array Point -> Array Segment
+segmentsOf rope = Array.zipWith { head: _, tail: _ } rope $ Array.drop 1 rope
 
 add :: Point -> Point -> Point
 add c1 c2 =
