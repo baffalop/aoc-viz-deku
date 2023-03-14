@@ -3,7 +3,7 @@ module Main
   )
   where
 
-import Prelude
+import Prelude hiding (add)
 
 import Control.Alt ((<|>))
 import Data.Compactable (compact)
@@ -28,8 +28,7 @@ import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 
 type Point = { x :: Int, y :: Int }
-
-type Coord = { x :: Number, y :: Number }
+type Vec = { x :: Number, y :: Number }
 
 origin :: Point
 origin = { x: 0, y: 0 }
@@ -63,11 +62,13 @@ main = runInBody Deku.do
     , D.div
         Alt.do
           klass_ $ containerKlass <> " flex-1 flex items-center justify-center relative"
-        [ link ({ head: _, neck: _ } <$> head <*> tail) "border-red-400 bg-red-500/40"
+        [ link ({ head: _, tail: _ } <$> head <*> tail) "border-red-400 bg-red-500/40"
         ]
     ]
+  where
+    containerKlass = "p-4 bg-slate-700"
 
-link :: Event { head :: Point, neck :: Point } -> String -> Nut
+link :: Event { head :: Point, tail :: Point } -> String -> Nut
 link coords klass =
   D.div
     Alt.do
@@ -77,9 +78,9 @@ link coords klass =
       style $ transformFrom <$> coords
     []
   where
-    transformFrom { head, neck } =
+    transformFrom { head, tail } =
       let
-        d = delta neck head
+        d = delta tail head
         width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * 1.5
         turns = case d.x, d.y of
           (-1.0), 0.0 -> 0.5
@@ -87,7 +88,7 @@ link coords klass =
       in
       i "width: "width"rem; \
         \transform: \
-          \translate("(p neck.x)"rem, "(p neck.y)"rem) \
+          \translate("(p tail.x)"rem, "(p tail.y)"rem) \
           \rotate("turns"turn); \
         \transform-origin: 0.75rem 0.75rem;"
 
@@ -104,16 +105,13 @@ follow follower target =
     shouldFollow = abs d.x > 1.0 || abs d.y > 1.0
     d = delta follower target
 
-containerKlass :: String
-containerKlass = "p-4 bg-slate-700"
-
 add :: Point -> Point -> Point
 add c1 c2 =
   { x: c1.x + c2.x
   , y: c1.y + c2.y
   }
 
-delta :: Point -> Point -> Coord
+delta :: Point -> Point -> Vec
 delta from to =
   { x: toNumber $ to.x - from.x
   , y: toNumber $ to.y - from.y
