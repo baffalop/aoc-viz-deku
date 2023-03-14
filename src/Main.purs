@@ -96,13 +96,13 @@ link coords klass =
 
 follow :: Point -> Point -> Point
 follow follower target =
-  add follower $ if shouldFollow then
-    { x: trunc $ signum d.x
-    , y: trunc $ signum d.y
-    }
-    else origin
+  if abs d.x > 1.0 || abs d.y > 1.0
+    then follower `add`
+      { x: trunc $ signum d.x
+      , y: trunc $ signum d.y
+      }
+    else follower
   where
-    shouldFollow = abs d.x > 1.0 || abs d.y > 1.0
     d = delta follower target
 
 add :: Point -> Point -> Point
