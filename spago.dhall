@@ -1,7 +1,10 @@
 { sources = [ "./src/**/*.purs" ]
 , name = "deku-starter"
 , dependencies =
-  [ "deku"
+  [ "arrays"
+  , "control"
+  , "debug"
+  , "deku"
   , "effect"
   , "filterable"
   , "foldable-traversable"
@@ -10,6 +13,7 @@
   , "interpolate"
   , "maybe"
   , "numbers"
+  , "point-free"
   , "prelude"
   , "qualified-do"
   , "tuples"

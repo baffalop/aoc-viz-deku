@@ -1,11 +1,15 @@
 module Main
   ( main
+  , follow
   )
   where
 
 import Prelude hiding (add)
 
 import Control.Alt ((<|>))
+import Control.Alternative (guard)
+import Data.Array ((!!), (..), (:))
+import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Int (floor, toNumber, trunc)
 import Data.Interpolate (i)
@@ -30,8 +34,13 @@ import QualifiedDo.Alt as Alt
 type Point = { x :: Int, y :: Int }
 type Vec = { x :: Number, y :: Number }
 
+type Segment = { head :: Point, tail :: Point }
+
 origin :: Point
 origin = { x: 0, y: 0 }
+
+windowSize :: Int
+windowSize = 5
 
 main :: Effect Unit
 main = runInBody Deku.do
@@ -41,8 +50,11 @@ main = runInBody Deku.do
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
-    tail :: Event Point
-    tail = fold follow origin head
+    tail :: Event (Array Point)
+    tail = fold trailBehind (Array.replicate windowSize origin) head
+
+    rope :: Event (Array Point)
+    rope = (:) <$> head <*> tail
 
   fixed
     [ D.div
@@ -61,21 +73,24 @@ main = runInBody Deku.do
         ]
     , D.div
         Alt.do
-          klass_ $ containerKlass <> " flex-1 flex items-center justify-center relative"
-        [ link ({ head: _, tail: _ } <$> head <*> tail) "border-red-400 bg-red-500/40"
-        ]
+          klass_ $ containerKlass <> " flex-1 relative"
+        $ 0 .. windowSize <#> \i ->
+            ropePoint "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
     ]
   where
     containerKlass = "p-4 bg-slate-700"
 
-link :: Event { head :: Point, tail :: Point } -> String -> Nut
-link coords klass =
+ropePoint :: String -> Event Point -> Nut
+ropePoint klass point = ropeSegment klass $ point <#> \p -> { head: p, tail: p }
+
+ropeSegment :: String -> Event Segment -> Nut
+ropeSegment klass points =
   D.div
     Alt.do
       klass_ $
         "rounded-full border transition-all duration-200 absolute left-1/2 top-1/2 "
         <> klass
-      style $ transformFrom <$> coords
+      style $ transformFrom <$> points
     []
   where
     transformFrom { head, tail } =
@@ -97,14 +112,20 @@ link coords klass =
     weight = 1.5
     halfWeight = weight / 2.0
 
-follow :: Point -> Point -> Point
-follow follower target =
-  if abs d.x > 1.0 || abs d.y > 1.0
-    then follower `add`
-      { x: trunc $ signum d.x
-      , y: trunc $ signum d.y
-      }
-    else follower
+trailBehind :: Array Point -> Point -> Array Point
+trailBehind trail head = case Array.uncons trail of
+  Nothing -> []
+  Just { head: neck, tail } -> case neck `follow` head of
+    Nothing -> trail
+    Just newNeck -> newNeck : trailBehind tail newNeck
+
+follow :: Point -> Point -> Maybe Point
+follow follower target = do
+  guard $ abs d.x > 1.0 || abs d.y > 1.0
+  pure $ follower `add`
+    { x: trunc $ signum d.x
+    , y: trunc $ signum d.y
+    }
   where
     d = delta follower target
 
