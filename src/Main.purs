@@ -73,7 +73,7 @@ link coords klass =
   D.div
     Alt.do
       klass_ $
-        "rounded-full border w-6 h-6 transition-all duration-200 absolute left-1/2 top-1/2 "
+        "rounded-full border transition-all duration-200 absolute left-1/2 top-1/2 "
         <> klass
       style $ transformFrom <$> coords
     []
@@ -81,18 +81,21 @@ link coords klass =
     transformFrom { head, tail } =
       let
         d = delta tail head
-        width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * 1.5
+        width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * weight
         turns = case d.x, d.y of
           (-1.0), 0.0 -> 0.5
           dx, dy -> (dx - 2.0) * (-0.125) * signum dy
       in
       i "width: "width"rem; \
+        \height: "weight"rem; \
         \transform: \
           \translate("(p tail.x)"rem, "(p tail.y)"rem) \
           \rotate("turns"turn); \
-        \transform-origin: 0.75rem 0.75rem;"
+        \transform-origin: "halfWeight"rem "halfWeight"rem;"
 
     p v = (toNumber v * 1.5) - 0.75
+    weight = 1.5
+    halfWeight = weight / 2.0
 
 follow :: Point -> Point -> Point
 follow follower target =
