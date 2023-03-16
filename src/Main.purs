@@ -106,7 +106,7 @@ ropeSegment klass points =
           \rotate("turns"turn); \
         \transform-origin: "halfWeight"rem "halfWeight"rem;"
 
-    p v = (toNumber v * 1.5) - 0.75
+    p v = (toNumber v * weight) - halfWeight
     weight = 1.5
     halfWeight = weight / 2.0
 
