@@ -58,8 +58,7 @@ main = runInBody Deku.do
     rope = (segmentsOf <.. (:)) <$> head <*> tail
 
   fixed
-    [ D.script (D.Src !:= "https://cdn.tailwindcss.com") []
-    , D.div
+    [ D.div
         (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
         [ D.div
             Alt.do
