@@ -5,11 +5,3 @@
 html {
   height: 100%;
 }
-
-body {
-  @apply bg-slate-800;
-}
-
-body {
-  @apply p-8 flex flex-col gap-8 text-slate-100 h-full;
-}

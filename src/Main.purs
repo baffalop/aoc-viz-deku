@@ -58,25 +58,29 @@ main = runInBody Deku.do
     rope = (segmentsOf <.. (:)) <$> head <*> tail
 
   fixed
-    [ D.div
-        Alt.do
-          klass_ $ containerKlass <> " space-x-4 max-w-max"
-        [ D.input
-            Alt.do
-              slider_ $ setN <<< floor
-              klass_ "cursor-pointer"
-              D.Value <:=> show <$> n
-              D.Step !:= "1"
-              D.Min !:= "1"
-              D.Max !:= "20"
-          []
-        , D.span_ [text $ show <$> n]
-        ]
+    [ D.script (D.Src !:= "https://cdn.tailwindcss.com") []
     , D.div
-        Alt.do
-          klass_ $ containerKlass <> " flex-1 relative"
-        $ 0 .. (windowSize - 1) <#> \i ->
-            ropeSegment "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
+        (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
+        [ D.div
+            Alt.do
+              klass_ $ containerKlass <> " space-x-4 max-w-max"
+            [ D.input
+                Alt.do
+                  slider_ $ setN <<< floor
+                  klass_ "cursor-pointer"
+                  D.Value <:=> show <$> n
+                  D.Step !:= "1"
+                  D.Min !:= "1"
+                  D.Max !:= "20"
+              []
+            , D.span_ [text $ show <$> n]
+            ]
+        , D.div
+            Alt.do
+              klass_ $ containerKlass <> " flex-1 relative"
+            $ 0 .. (windowSize - 1) <#> \i ->
+                ropeSegment "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
+        ]
     ]
   where
     containerKlass = "p-4 bg-slate-700"
