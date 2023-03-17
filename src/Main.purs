@@ -1,6 +1,7 @@
 module Main
-  ( main
+  ( extend
   , follow
+  , main
   )
   where
 
@@ -8,7 +9,7 @@ import Prelude hiding (add)
 
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
-import Data.Array ((!!), (..), (:))
+import Data.Array ((:))
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Int (floor, toNumber, trunc)
@@ -16,11 +17,11 @@ import Data.Interpolate (i)
 import Data.Maybe (Maybe(..))
 import Data.Number (abs, sqrt)
 import Data.Ord (signum)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Deku.Attribute ((!:=), (<:=>))
 import Deku.Attributes (klass_, style)
-import Deku.Control (text)
-import Deku.Core (fixed, Nut)
+import Deku.Control (text, (<#~>))
+import Deku.Core (Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useState)
@@ -45,14 +46,14 @@ windowSize = 10
 
 main :: Effect Unit
 main = runInBody Deku.do
-  setN /\ n <- useState 10
+  setN /\ n <- useState windowSize
 
   let
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
     tail :: Event (Array Point)
-    tail = fold trailBehind (Array.replicate windowSize origin) head
+    tail = fold makeTrail (Array.replicate windowSize origin) $ (/\) <$> n <*> head
 
     rope :: Event (Array Segment)
     rope = (segmentsOf <.. (:)) <$> head <*> tail
@@ -73,8 +74,9 @@ main = runInBody Deku.do
             , D.span_ [text $ show <$> n]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
-            $ 0 .. (windowSize - 1) <#> \i ->
-                ropeSegment "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
+            [ rope <#~> \r ->
+              fixed $ ropeSegment "border-red-400 bg-red-500/40" <<< pure <$> r
+            ]
         ]
     ]
   where
@@ -109,6 +111,11 @@ ropeSegment klass points =
     weight = 1.5
     halfWeight = weight / 2.0
 
+makeTrail :: Array Point -> (Int /\ Point) -> Array Point
+makeTrail trail (n /\ head) = (_ `trailBehind` head) $
+  if Array.length trail >= n then Array.take n trail
+  else extend n trail
+
 trailBehind :: Array Point -> Point -> Array Point
 trailBehind trail head = case Array.uncons trail of
   Nothing -> []
@@ -128,6 +135,11 @@ follow follower target = do
 
 segmentsOf :: Array Point -> Array Segment
 segmentsOf rope = Array.zipWith { head: _, tail: _ } rope $ Array.drop 1 rope
+
+extend :: forall a. Int -> Array a -> Array a
+extend n = Array.unsnoc >>> case _ of
+  Just { init, last } -> init <> Array.replicate (n - Array.length init) last
+  Nothing -> []
 
 add :: Point -> Point -> Point
 add c1 c2 =
