@@ -60,9 +60,7 @@ main = runInBody Deku.do
   fixed
     [ D.div
         (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
-        [ D.div
-            Alt.do
-              klass_ $ containerKlass <> " space-x-4 max-w-max"
+        [ D.div (klass_ $ containerKlass <> " space-x-4 max-w-max")
             [ D.input
                 Alt.do
                   slider_ $ setN <<< floor
@@ -74,9 +72,7 @@ main = runInBody Deku.do
               []
             , D.span_ [text $ show <$> n]
             ]
-        , D.div
-            Alt.do
-              klass_ $ containerKlass <> " flex-1 relative"
+        , D.div (klass_ $ containerKlass <> " flex-1 relative")
             $ 0 .. (windowSize - 1) <#> \i ->
                 ropeSegment "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
         ]
