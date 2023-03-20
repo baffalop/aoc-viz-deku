@@ -13,7 +13,7 @@ import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Int (floor, toNumber, trunc)
 import Data.Interpolate (i)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isNothing)
 import Data.Number (abs, sqrt)
 import Data.Ord (signum)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -77,22 +77,21 @@ main = runInBody Deku.do
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
             $ 0 .. (maxLength - 1) <#> \i ->
-                ropeSegment "border-red-400 bg-red-500/40" ((i < _) <$> n)
-                  $ compact $ rope <#> (_ !! i)
+                ropeSegment "border-red-400 bg-red-500/40" $ rope <#> (_ !! i)
         ]
     ]
   where
     containerKlass = "p-4 bg-slate-700"
 
-ropeSegment :: String -> Event Boolean -> Event Segment -> Nut
-ropeSegment klasses display points =
+ropeSegment :: String -> Event (Maybe Segment) -> Nut
+ropeSegment klasses segment =
   D.div
     Alt.do
-      klass $ display <#> \d ->
-        (if d then "absolute" else "hidden")
+      klass $ segment <#> isNothing >>> \hidden ->
+        (if hidden then "hidden" else "absolute")
         <> " rounded-full border transition-all duration-200 left-1/2 top-1/2 "
         <> klasses
-      style $ transformFrom <$> points
+      style $ transformFrom <$> compact segment
     []
   where
     transformFrom { head, tail } =
