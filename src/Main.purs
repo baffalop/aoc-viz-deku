@@ -91,25 +91,25 @@ ropeSegment klasses segment =
         (if hidden then "hidden" else "absolute")
         <> " rounded-full border transition-all duration-200 left-1/2 top-1/2 "
         <> klasses
-      style $ transformFrom <$> compact segment
+
+      style $ compact segment <#> \{ head, tail } ->
+        let
+          d = delta tail head
+          width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * weight
+          turns = case d.x, d.y of
+            (-1.0), 0.0 -> 0.5
+            dx, dy -> (dx - 2.0) * (-0.125) * signum dy
+        in
+        i "width: "width"rem; \
+          \height: "weight"rem; \
+          \transform: \
+            \translate("(trans tail.x)"rem, "(trans tail.y)"rem) \
+            \rotate("turns"turn); \
+          \transform-origin: "halfWeight"rem "halfWeight"rem;"
+
     []
   where
-    transformFrom { head, tail } =
-      let
-        d = delta tail head
-        width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * weight
-        turns = case d.x, d.y of
-          (-1.0), 0.0 -> 0.5
-          dx, dy -> (dx - 2.0) * (-0.125) * signum dy
-      in
-      i "width: "width"rem; \
-        \height: "weight"rem; \
-        \transform: \
-          \translate("(p tail.x)"rem, "(p tail.y)"rem) \
-          \rotate("turns"turn); \
-        \transform-origin: "halfWeight"rem "halfWeight"rem;"
-
-    p v = (toNumber v * weight) - halfWeight
+    trans v = (toNumber v * weight) - halfWeight
     weight = 1.5
     halfWeight = weight / 2.0
 
