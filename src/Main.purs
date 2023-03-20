@@ -40,19 +40,22 @@ type Segment = { head :: Point, tail :: Point }
 origin :: Point
 origin = { x: 0, y: 0 }
 
-windowSize :: Int
-windowSize = 10
+initLength :: Int
+initLength = 10
+
+maxLength :: Int
+maxLength = 30
 
 main :: Effect Unit
 main = runInBody Deku.do
-  setN /\ n <- useState 10
+  setN /\ n <- useState initLength
 
   let
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
     tail :: Event (Array Point)
-    tail = fold trailBehind (Array.replicate windowSize origin) head
+    tail = fold trailBehind (Array.replicate initLength origin) head
 
     rope :: Event (Array Segment)
     rope = (segmentsOf <.. (:)) <$> head <*> tail
@@ -68,12 +71,12 @@ main = runInBody Deku.do
                   D.Value <:=> show <$> n
                   D.Step !:= "1"
                   D.Min !:= "1"
-                  D.Max !:= "20"
+                  D.Max !:= show maxLength
               []
             , D.span_ [text $ show <$> n]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
-            $ 0 .. (windowSize - 1) <#> \i ->
+            $ 0 .. (initLength - 1) <#> \i ->
                 ropeSegment "border-red-400 bg-red-500/40" $ compact $ rope <#> (_ !! i)
         ]
     ]
