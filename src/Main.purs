@@ -8,15 +8,14 @@ import Prelude hiding (add)
 
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
-import Data.Array ((!!), (..), (:))
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Int (floor, toNumber, trunc)
 import Data.Interpolate (i)
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.Number (abs, sqrt)
 import Data.Ord (signum)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text)
@@ -29,12 +28,10 @@ import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold)
 import FRP.Event.Keyboard as Key
-import PointFree ((<..))
 import QualifiedDo.Alt as Alt
 
 type Point = { x :: Int, y :: Int }
 type Vec = { x :: Number, y :: Number }
-
 type Segment = { head :: Point, tail :: Point }
 
 origin :: Point
@@ -54,12 +51,6 @@ main = runInBody Deku.do
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
-    tail :: Event (Array Point)
-    tail = fold makeTrail (Array.replicate initLength origin) $ (/\) <$> n <*> head
-
-    rope :: Event (Array Segment)
-    rope = (segmentsOf <.. (:)) <$> head <*> tail
-
   fixed
     [ D.div
         (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
@@ -76,12 +67,32 @@ main = runInBody Deku.do
             , D.span_ [text $ show <$> n]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
-            $ 0 .. (maxLength - 1) <#> \i ->
-                ropeSegment "border-red-400 bg-red-500/40" $ rope <#> (_ !! i)
+            $ rope n head <#> ropeSegment "border-red-400 bg-red-500/40"
         ]
     ]
   where
     containerKlass = "p-4 bg-slate-700"
+
+rope :: Event Int -> Event Point -> Array (Event (Maybe Segment))
+rope n = make 1 [] <<< (Just <$> _)
+  where
+    make :: Int -> Array (Event (Maybe Segment)) -> Event (Maybe Point) -> Array (Event (Maybe Segment))
+    make index accum head
+      | index > maxLength = accum
+      | otherwise =
+        let
+          exists = (index <= _) <$> n
+          tail = fold maybeFollow Nothing $ maybeIf <$> exists <*> compact head
+          segment = (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
+        in
+        make (index + 1) (Array.snoc accum segment) tail
+
+    maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
+    maybeFollow tailM headM = do
+      head <- headM
+      Just $ fromMaybe head do
+        tail <- tailM
+        Just $ fromMaybe tail $ tail `follow` head
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment =
@@ -113,18 +124,6 @@ ropeSegment klasses segment =
     weight = 1.5
     halfWeight = weight / 2.0
 
-makeTrail :: Array Point -> (Int /\ Point) -> Array Point
-makeTrail trail (n /\ head) = (_ `trailBehind` head) $
-  if Array.length trail >= n then Array.take n trail
-  else extend n trail
-
-trailBehind :: Array Point -> Point -> Array Point
-trailBehind trail head = case Array.uncons trail of
-  Nothing -> []
-  Just { head: neck, tail } -> case neck `follow` head of
-    Nothing -> trail
-    Just newNeck -> newNeck : trailBehind tail newNeck
-
 follow :: Point -> Point -> Maybe Point
 follow follower target = do
   guard $ abs d.x > 1.0 || abs d.y > 1.0
@@ -134,14 +133,6 @@ follow follower target = do
     }
   where
     d = delta follower target
-
-segmentsOf :: Array Point -> Array Segment
-segmentsOf rope = Array.zipWith { head: _, tail: _ } rope $ Array.drop 1 rope
-
-extend :: forall a. Int -> Array a -> Array a
-extend n = Array.unsnoc >>> case _ of
-  Just { init, last } -> init <> Array.replicate (n - Array.length init) last
-  Nothing -> []
 
 add :: Point -> Point -> Point
 add c1 c2 =
@@ -154,6 +145,9 @@ delta from to =
   { x: toNumber $ to.x - from.x
   , y: toNumber $ to.y - from.y
   }
+
+maybeIf :: forall a. Boolean -> a -> Maybe a
+maybeIf = if _ then Just else const Nothing
 
 vectorFromKey :: String -> Maybe Point
 vectorFromKey = case _ of
