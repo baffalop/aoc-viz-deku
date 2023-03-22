@@ -16,7 +16,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.Number (abs, sqrt)
 import Data.Ord (signum)
 import Data.Tuple.Nested ((/\))
-import Deku.Attribute ((!:=), (<:=>))
+import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text)
 import Deku.Core (Domable, Nut, fixed)
@@ -29,6 +29,7 @@ import Effect (Effect)
 import FRP.Event (Event, fold)
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
+import Web.Event.Event (stopPropagation)
 
 type Hook lock payload a = (a -> Domable lock payload) -> Domable lock payload
 
@@ -62,6 +63,7 @@ main = runInBody Deku.do
             [ D.input
                 Alt.do
                   slider_ $ setN <<< floor
+                  D.OnKeydown !:= cb stopPropagation
                   klass_ "cursor-pointer"
                   D.Value <:=> show <$> n
                   D.Step !:= "1"
