@@ -67,31 +67,11 @@ main = runInBody Deku.do
             , D.span_ [text $ show <$> n]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
-            $ rope n head <#> ropeSegment "border-red-400 bg-red-500/40"
+            $ makeRope n head <#> ropeSegment "border-red-400 bg-red-500/40"
         ]
     ]
   where
     containerKlass = "p-4 bg-slate-700"
-
-rope :: Event Int -> Event Point -> Array (Event (Maybe Segment))
-rope n = make 1 [] <<< (Just <$> _)
-  where
-    make :: Int -> Array (Event (Maybe Segment)) -> Event (Maybe Point) -> Array (Event (Maybe Segment))
-    make index accum head
-      | index > maxLength = accum
-      | otherwise =
-        let
-          tail = fold maybeFollow Nothing $ maybeIf <<< (index <= _) <$> n <*> compact head
-          segment = (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
-        in
-        make (index + 1) (Array.snoc accum segment) tail
-
-    maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
-    maybeFollow tailM headM = do
-      head <- headM
-      Just $ fromMaybe head do
-        tail <- tailM
-        Just $ fromMaybe tail $ tail `follow` head
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment =
@@ -122,6 +102,26 @@ ropeSegment klasses segment =
     trans v = (toNumber v * weight) - halfWeight
     weight = 1.5
     halfWeight = weight / 2.0
+
+makeRope :: Event Int -> Event Point -> Array (Event (Maybe Segment))
+makeRope n = unfold 1 [] <<< (Just <$> _)
+  where
+    unfold :: Int -> Array (Event (Maybe Segment)) -> Event (Maybe Point) -> Array (Event (Maybe Segment))
+    unfold i rope head
+      | i > maxLength = rope
+      | otherwise =
+        let
+          tail = fold maybeFollow Nothing $ maybeIf <<< (i <= _) <$> n <*> compact head
+          segment = (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
+        in
+        unfold (i + 1) (Array.snoc rope segment) tail
+
+maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
+maybeFollow tailM headM = do
+  head <- headM
+  Just $ fromMaybe head do
+    tail <- tailM
+    Just $ fromMaybe tail $ tail `follow` head
 
 follow :: Point -> Point -> Maybe Point
 follow follower target = do
