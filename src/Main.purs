@@ -8,6 +8,7 @@ import Prelude hiding (add)
 
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
+import Control.Apply (lift2)
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Int (floor, toNumber, trunc)
@@ -118,7 +119,7 @@ makeRope n initialHead f = unfold 1 (Just <$> initialHead) []
         tail <- useMemoized
           $ fold maybeFollow Nothing
           $ maybeIf <<< (i <= _) <$> n <*> compact head
-        segment <- useMemoized $ (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
+        segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
         unfold (i + 1) tail $ Array.snoc rope segment
 
 maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
