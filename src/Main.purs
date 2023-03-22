@@ -19,10 +19,10 @@ import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text)
-import Deku.Core (fixed, Nut)
+import Deku.Core (Domable, Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useState)
+import Deku.Hooks (useMemoized, useState)
 import Deku.Listeners (slider_)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
@@ -51,6 +51,8 @@ main = runInBody Deku.do
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
+  rope :: Array (Event (Maybe Segment)) <- makeRope n head
+
   fixed
     [ D.div
         (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
@@ -67,7 +69,7 @@ main = runInBody Deku.do
             , D.span_ [text $ show <$> n]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
-            $ makeRope n head <#> ropeSegment "border-red-400 bg-red-500/40"
+            $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
         ]
     ]
   where
@@ -103,18 +105,19 @@ ropeSegment klasses segment =
     weight = 1.5
     halfWeight = weight / 2.0
 
-makeRope :: Event Int -> Event Point -> Array (Event (Maybe Segment))
-makeRope n = unfold 1 [] <<< (Just <$> _)
+makeRope :: forall lock payload.
+  Event Int ->
+  Event Point ->
+  (Array (Event (Maybe Segment)) -> Domable lock payload) ->
+  Domable lock payload
+makeRope n initialHead f = unfold 1 (Just <$> initialHead) []
   where
-    unfold :: Int -> Array (Event (Maybe Segment)) -> Event (Maybe Point) -> Array (Event (Maybe Segment))
-    unfold i rope head
-      | i > maxLength = rope
-      | otherwise =
-        let
-          tail = fold maybeFollow Nothing $ maybeIf <<< (i <= _) <$> n <*> compact head
-          segment = (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
-        in
-        unfold (i + 1) (Array.snoc rope segment) tail
+    unfold i head rope
+      | i > maxLength = f rope
+      | otherwise = Deku.do
+        tail <- useMemoized $ fold maybeFollow Nothing $ maybeIf <<< (i <= _) <$> n <*> compact head
+        segment <- useMemoized $ (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
+        unfold (i + 1) tail $ Array.snoc rope segment
 
 maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
 maybeFollow tailM headM = do
