@@ -113,7 +113,9 @@ makeRope n initialHead f = unfold 1 (Just <$> initialHead) []
     unfold i head rope
       | i > maxLength = f rope
       | otherwise = Deku.do
-        tail <- useMemoized $ fold maybeFollow Nothing $ maybeIf <<< (i <= _) <$> n <*> compact head
+        tail <- useMemoized
+          $ fold maybeFollow Nothing
+          $ maybeIf <<< (i <= _) <$> n <*> compact head
         segment <- useMemoized $ (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
         unfold (i + 1) tail $ Array.snoc rope segment
 
