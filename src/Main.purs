@@ -81,8 +81,7 @@ rope n = make 1 [] <<< (Just <$> _)
       | index > maxLength = accum
       | otherwise =
         let
-          exists = (index <= _) <$> n
-          tail = fold maybeFollow Nothing $ maybeIf <$> exists <*> compact head
+          tail = fold maybeFollow Nothing $ maybeIf <<< (index <= _) <$> n <*> compact head
           segment = (\h t -> { head: _, tail: _ } <$> h <*> t) <$> head <*> tail
         in
         make (index + 1) (Array.snoc accum segment) tail
