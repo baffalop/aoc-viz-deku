@@ -30,6 +30,8 @@ import FRP.Event (Event, fold)
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 
+type Hook lock payload a = (a -> Domable lock payload) -> Domable lock payload
+
 type Point = { x :: Int, y :: Int }
 type Vec = { x :: Number, y :: Number }
 type Segment = { head :: Point, tail :: Point }
@@ -105,11 +107,7 @@ ropeSegment klasses segment =
     weight = 1.5
     halfWeight = weight / 2.0
 
-makeRope :: forall lock payload.
-  Event Int ->
-  Event Point ->
-  (Array (Event (Maybe Segment)) -> Domable lock payload) ->
-  Domable lock payload
+makeRope :: forall lock payload. Event Int -> Event Point -> Hook lock payload (Array (Event (Maybe Segment)))
 makeRope n initialHead f = unfold 1 (Just <$> initialHead) []
   where
     unfold i head rope
