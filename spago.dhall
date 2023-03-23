@@ -17,6 +17,7 @@
   , "prelude"
   , "qualified-do"
   , "tuples"
+  , "web-events"
   , "web-html"
   , "web-uievents"
   ]
