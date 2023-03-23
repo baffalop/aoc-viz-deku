@@ -11,10 +11,10 @@ import Control.Alternative (guard)
 import Control.Apply (lift2)
 import Data.Array as Array
 import Data.Compactable (compact)
-import Data.Int (floor, toNumber, trunc)
+import Data.Int (toNumber, trunc)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
-import Data.Number (abs, sqrt)
+import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
@@ -63,7 +63,7 @@ main = runInBody Deku.do
         [ D.div (klass_ $ containerKlass <> " space-x-4 max-w-max")
             [ D.input
                 Alt.do
-                  slider_ $ setN <<< floor
+                  slider_ $ setN <<< trunc
                   D.OnKeydown !:= cb stopPropagation
                   klass_ "cursor-pointer"
                   D.Value <:=> show <$> n
@@ -89,13 +89,10 @@ ropeSegment klasses segment =
         <> " rounded-full border transition-all duration-200 left-1/2 top-1/2 "
         <> klasses
 
-      style $ compact segment <#> \{ head, tail } ->
+      style $ ((/\) <$> segment' <*> turnsState) <#> \({ head, tail } /\ turns) ->
         let
           d = delta tail head
           width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * weight
-          turns = case d.x, d.y of
-            (-1.0), 0.0 -> 0.5
-            dx, dy -> (dx - 2.0) * (-0.125) * signum dy
         in
         i "width: "width"rem; \
           \height: "weight"rem; \
@@ -106,9 +103,24 @@ ropeSegment klasses segment =
 
     []
   where
-    trans v = (toNumber v * weight) - halfWeight
     weight = 1.5
     halfWeight = weight / 2.0
+
+    trans :: Int -> Number
+    trans v = (toNumber v * weight) - halfWeight
+
+    segment' :: Event Segment
+    segment' = compact segment
+
+    turnsState :: Event Number
+    turnsState =
+      fold (\last cur -> closest last (floor last + cur) (ceil last + cur)) 0.0
+        $ turnsIn <$> segment'
+
+    turnsIn :: Segment -> Number
+    turnsIn { head, tail } = case delta tail head of
+      { x: -1.0, y: 0.0 } -> 0.5
+      { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
 
 makeRope :: forall lock payload. Event Int -> Event Point -> Hook lock payload (Array (Event (Maybe Segment)))
 makeRope n initialHead f = unfold 1 (Just <$> initialHead) []
@@ -150,6 +162,14 @@ delta from to =
   { x: toNumber $ to.x - from.x
   , y: toNumber $ to.y - from.y
   }
+
+closest :: Number -> Number -> Number -> Number
+closest to x y = case compare dx dy of
+  LT -> x
+  GT -> y
+  EQ -> if abs x < abs y then x else y
+  where
+    (dx /\ dy) = abs (to - x) /\ abs (to - y)
 
 maybeIf :: forall a. Boolean -> a -> Maybe a
 maybeIf = if _ then Just else const Nothing
