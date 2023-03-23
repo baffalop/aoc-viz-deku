@@ -49,13 +49,13 @@ maxLength = 30
 
 main :: Effect Unit
 main = runInBody Deku.do
-  setN /\ n <- useState initLength
+  setLength /\ length <- useState initLength
 
   let
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
-  rope :: Array (Event (Maybe Segment)) <- makeRope n head
+  rope :: Array (Event (Maybe Segment)) <- makeRope length head
 
   fixed
     [ D.div
@@ -63,15 +63,15 @@ main = runInBody Deku.do
         [ D.div (klass_ $ containerKlass <> " space-x-4 max-w-max")
             [ D.input
                 Alt.do
-                  slider_ $ setN <<< trunc
+                  slider_ $ setLength <<< trunc
                   D.OnKeydown !:= cb stopPropagation
                   klass_ "cursor-pointer"
-                  D.Value <:=> show <$> n
+                  D.Value <:=> show <$> length
                   D.Step !:= "1"
                   D.Min !:= "1"
                   D.Max !:= show maxLength
               []
-            , D.span_ [text $ show <$> n]
+            , D.span_ [text $ show <$> length]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
             $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
@@ -123,14 +123,14 @@ ropeSegment klasses segment =
       { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
 
 makeRope :: forall lock payload. Event Int -> Event Point -> Hook lock payload (Array (Event (Maybe Segment)))
-makeRope n initialHead f = unfold 1 (Just <$> initialHead) []
+makeRope length initialHead f = unfold 1 (Just <$> initialHead) []
   where
     unfold i head rope
       | i > maxLength = f rope
       | otherwise = Deku.do
         tail <- useMemoized
           $ fold maybeFollow Nothing
-          $ maybeIf <<< (i <= _) <$> n <*> compact head
+          $ maybeIf <<< (i <= _) <$> length <*> compact head
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
         unfold (i + 1) tail $ Array.snoc rope segment
 
