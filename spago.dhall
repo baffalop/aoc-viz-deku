@@ -18,8 +18,6 @@
   , "qualified-do"
   , "tuples"
   , "web-events"
-  , "web-html"
-  , "web-uievents"
   ]
 , packages = ./packages.dhall
 }
