@@ -11,6 +11,7 @@ import Control.Alternative (guard)
 import Control.Apply (lift2)
 import Data.Array as Array
 import Data.Compactable (compact)
+import Data.Filterable (filter)
 import Data.Int (toNumber, trunc)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
@@ -27,7 +28,7 @@ import Deku.Hooks (useMemoized, useState)
 import Deku.Listeners (slider_)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
-import FRP.Event (Event, fold)
+import FRP.Event (Event, fold, withLast)
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 import Web.Event.Event (stopPropagation)
@@ -128,7 +129,7 @@ makeRope length initialHead f = unfold 1 (Just <$> initialHead) []
     unfold i head rope
       | i > maxLength = f rope
       | otherwise = Deku.do
-        tail <- useMemoized
+        tail <- useMemoized $ dedup
           $ fold maybeFollow Nothing
           $ maybeIf <<< (i <= _) <$> length <*> compact head
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
@@ -181,3 +182,9 @@ vectorFromKey = case _ of
   "ArrowLeft" -> Just { x: -1, y: 0 }
   "ArrowRight" -> Just { x: 1, y: 0 }
   _ -> Nothing
+
+dedup :: forall a. Eq a => Event a -> Event a
+dedup =
+  withLast
+  >>> filter (\{ last, now } -> Just now == last)
+  >>> (_ <#> _.now)
