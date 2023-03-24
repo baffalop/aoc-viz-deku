@@ -98,7 +98,7 @@ main = runInBody Deku.do
     ]
   where
     buttonKlass = "py-0.5 px-2 rounded border border-emerald-400 text-emerald-400 text-sm font-medium bg-emerald-500/10 hover:bg-emerald-500/25"
-    containerKlass = "p-4 bg-slate-700"
+    containerKlass = "p-4 bg-slate-700 rounded-lg border-2 border-slate-600"
     rangeKlass =
       "cursor-pointer appearance-none bg-transparent \
         \[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-emerald-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:-mt-1.5 \
