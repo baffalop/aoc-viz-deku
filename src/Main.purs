@@ -69,11 +69,7 @@ main = runInBody Deku.do
     [ D.div
         (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
         [ D.div (klass_ $ containerKlass <> " max-w-max flex gap-4 items-center")
-            [ D.button
-                Alt.do
-                  klass_ buttonKlass
-                  click_ $ dec unit
-                [text_ "-1"]
+            [ D.button (klass_ buttonKlass <|> click_ (dec unit)) [text_ "-1"]
             , D.input
                 Alt.do
                   slider_ $ setLength <<< trunc
@@ -83,11 +79,7 @@ main = runInBody Deku.do
                   D.Min !:= "1"
                   D.Max !:= show maxLength
               []
-            , D.button
-                Alt.do
-                  klass_ buttonKlass
-                  click_ $ inc unit
-                [text_ "+1"]
+            , D.button (klass_ buttonKlass <|> click_ (inc unit)) [text_ "+1"]
             , D.span (klass_ "w-4") [text $ show <$> length]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
