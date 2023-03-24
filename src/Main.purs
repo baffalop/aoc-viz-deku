@@ -72,7 +72,7 @@ main = runInBody Deku.do
     <a href="https://adventofcode.com/2022/day/9">Advent of Code 2022 day 9</a>.</p>
   <p>I used it as a playground to explore <a href="https://purescript-deku.netlify.app/">Deku</a>,
     a VDOMless Purescript framework based on FRP.</p>
-  <p><a href="https://github.com/baffalop/aoc-viz-deku">Github</a></p>
+  <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
 </div>"""
 
   rope :: Array (Event (Maybe Segment)) <- makeRope length head
