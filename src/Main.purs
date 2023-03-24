@@ -67,7 +67,7 @@ main = runInBody Deku.do
 
     descriptionPanel = Proxy :: Proxy """
 <div class="w-56 space-y-3 row-span-full">
-  <h1 class="font-bold text-4xl text-red-400 italic mb-6">Rope/snake</h1>
+  <h1 class="font-bold text-4xl text-red-400 italic mb-6 tracking-wider">Rope/snake</h1>
   <p>This is a visualisation of the Rope Bridge puzzle from
     <a href="https://adventofcode.com/2022/day/9">Advent of Code 2022 day 9</a>.</p>
   <p>I used it as a playground to explore <a href="https://purescript-deku.netlify.app/">Deku</a>,
@@ -81,19 +81,23 @@ main = runInBody Deku.do
     [ D.div
         (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
         [ descriptionPanel ~~ {}
-        , D.div (klass_ $ containerKlass <> " max-w-max flex gap-4 items-center")
-            [ D.button (klass_ buttonKlass <|> click_ (dec unit)) [text_ "-1"]
-            , D.input
-                Alt.do
-                  slider_ $ setLength <<< trunc
-                  D.OnKeydown !:= cb stopPropagation
-                  D.Value <:=> show <$> length
-                  D.Step !:= "1"
-                  D.Min !:= "1"
-                  D.Max !:= show maxLength
-              []
-            , D.button (klass_ buttonKlass <|> click_ (inc unit)) [text_ "+1"]
-            , D.span (klass_ "w-4") [text $ show <$> length]
+        , D.div (klass_ $ containerKlass <> " max-w-max space-y-2")
+            [ D.label (D.For !:= "length" <|> klass_ labelKlass) [text_ "Length"]
+            , D.div (klass_ "flex gap-4 items-center")
+                [ D.button (klass_ buttonKlass <|> click_ (dec unit)) [text_ "-1"]
+                , D.input
+                    Alt.do
+                      slider_ $ setLength <<< trunc
+                      D.Name !:= "length"
+                      D.OnKeydown !:= cb stopPropagation
+                      D.Value <:=> show <$> length
+                      D.Step !:= "1"
+                      D.Min !:= "1"
+                      D.Max !:= show maxLength
+                  []
+                , D.button (klass_ buttonKlass <|> click_ (inc unit)) [text_ "+1"]
+                , D.span (klass_ "w-4") [text $ show <$> length]
+                ]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
             $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
@@ -102,6 +106,7 @@ main = runInBody Deku.do
   where
     buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
     containerKlass = "p-4 bg-slate-700 rounded-lg border-2 border-slate-600"
+    labelKlass = "font-bold italic text-slate-300 inline-block -translate-y-2 tracking-wider"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment =
