@@ -25,12 +25,14 @@ import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useEffect, useMemoized, useState, useState')
 import Deku.Listeners (click_, slider_)
+import Deku.Pursx ((~~))
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold, withLast)
 import FRP.Event.Class ((*|>), (<|*))
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
+import Type.Proxy (Proxy(..))
 import Web.Event.Event (stopPropagation)
 
 type Hook a = forall lock payload. (a -> Domable lock payload) -> Domable lock payload
@@ -63,12 +65,20 @@ main = runInBody Deku.do
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
 
+    descriptionPanel = Proxy :: Proxy """
+<div class="w-56 space-y-2 row-span-full">
+  <h1 class="font-bold text-4xl text-red-400 italic mb-6">Rope/snake</h1>
+  <p>This is a visualisation of the rope puzzle from <a href="">Advent of Code 2022 day 9</a>.</p>
+  <p>I used it as a playground to explore <a href="">Deku</a>, a VDOMless Purescript framework based on FRP.</p>
+</div>"""
+
   rope :: Array (Event (Maybe Segment)) <- makeRope length head
 
   fixed
     [ D.div
-        (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
-        [ D.div (klass_ $ containerKlass <> " max-w-max flex gap-4 items-center")
+        (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
+        [ descriptionPanel ~~ {}
+        , D.div (klass_ $ containerKlass <> " max-w-max flex gap-4 items-center")
             [ D.button (klass_ buttonKlass <|> click_ (dec unit)) [text_ "-1"]
             , D.input
                 Alt.do
@@ -87,7 +97,7 @@ main = runInBody Deku.do
         ]
     ]
   where
-    buttonKlass = "py-0.5 px-2 rounded border border-emerald-400 text-emerald-400 text-sm font-medium bg-emerald-500/10 hover:bg-emerald-500/25"
+    buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
     containerKlass = "p-4 bg-slate-700 rounded-lg border-2 border-slate-600"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
