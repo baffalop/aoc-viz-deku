@@ -32,7 +32,7 @@ import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 import Web.Event.Event (stopPropagation)
 
-type Hook lock payload a = (a -> Domable lock payload) -> Domable lock payload
+type Hook a = forall lock payload. (a -> Domable lock payload) -> Domable lock payload
 
 type Point = { x :: Int, y :: Int }
 type Vec = { x :: Number, y :: Number }
@@ -122,7 +122,7 @@ ropeSegment klasses segment =
       { x: -1.0, y: 0.0 } -> 0.5
       { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
 
-makeRope :: forall lock payload. Event Int -> Event Point -> Hook lock payload (Array (Event (Maybe Segment)))
+makeRope :: Event Int -> Event Point -> Hook (Array (Event (Maybe Segment)))
 makeRope length initialHead f = unfold 1 (Just <$> initialHead) []
   where
     unfold i head rope
