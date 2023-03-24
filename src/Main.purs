@@ -78,7 +78,6 @@ main = runInBody Deku.do
             , D.input
                 Alt.do
                   slider_ $ setLength <<< trunc
-                  klass_ rangeKlass
                   D.OnKeydown !:= cb stopPropagation
                   D.Value <:=> show <$> length
                   D.Step !:= "1"
@@ -99,11 +98,6 @@ main = runInBody Deku.do
   where
     buttonKlass = "py-0.5 px-2 rounded border border-emerald-400 text-emerald-400 text-sm font-medium bg-emerald-500/10 hover:bg-emerald-500/25"
     containerKlass = "p-4 bg-slate-700 rounded-lg border-2 border-slate-600"
-    rangeKlass =
-      "cursor-pointer appearance-none bg-transparent \
-        \[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-emerald-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:-mt-1.5 \
-        \[&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:bg-emerald-400/50 [&::-webkit-slider-runnable-track]:rounded-full \
-        \[&::-ms-fill-lower]:bg-emerald-400"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment =

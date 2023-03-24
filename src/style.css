@@ -9,3 +9,15 @@ html {
 body {
   @apply bg-slate-800;
 }
+
+input[type=range] {
+  @apply cursor-pointer appearance-none bg-transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  @apply appearance-none w-4 h-4 bg-emerald-400 rounded-full -mt-1.5;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  @apply h-1 bg-emerald-400/50 rounded-full;
+}
