@@ -69,10 +69,10 @@ main = runInBody Deku.do
 <div class="w-56 space-y-2 row-span-full">
   <h1 class="font-bold text-4xl text-red-400 italic mb-6">Rope/snake</h1>
   <p>This is a visualisation of the Rope Bridge puzzle from
-    <a href="https://adventofcode.com/2022/day/9" target="_blank">Advent of Code 2022 day 9</a>.</p>
-  <p>I used it as a playground to explore <a href="https://purescript-deku.netlify.app/" target="_blank">Deku</a>,
+    <a href="https://adventofcode.com/2022/day/9">Advent of Code 2022 day 9</a>.</p>
+  <p>I used it as a playground to explore <a href="https://purescript-deku.netlify.app/">Deku</a>,
     a VDOMless Purescript framework based on FRP.</p>
-  <p><a href="https://github.com/baffalop/aoc-viz-deku" target="_blank">Github</a></p>
+  <p><a href="https://github.com/baffalop/aoc-viz-deku">Github</a></p>
 </div>"""
 
   rope :: Array (Event (Maybe Segment)) <- makeRope length head
