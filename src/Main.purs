@@ -69,7 +69,7 @@ main = runInBody Deku.do
   fixed
     [ D.div
         (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
-        [ D.div (klass_ $ containerKlass <> " space-x-4 max-w-max")
+        [ D.div (klass_ $ containerKlass <> " max-w-max flex gap-4 items-center")
             [ D.button
                 Alt.do
                   klass_ buttonKlass
@@ -78,19 +78,19 @@ main = runInBody Deku.do
             , D.input
                 Alt.do
                   slider_ $ setLength <<< trunc
+                  klass_ rangeKlass
                   D.OnKeydown !:= cb stopPropagation
-                  klass_ "cursor-pointer"
                   D.Value <:=> show <$> length
                   D.Step !:= "1"
                   D.Min !:= "1"
                   D.Max !:= show maxLength
               []
-            , D.span_ [text $ show <$> length]
             , D.button
                 Alt.do
                   klass_ buttonKlass
                   click_ $ inc unit
                 [text_ "+1"]
+            , D.span (klass_ "w-4") [text $ show <$> length]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
             $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
@@ -99,6 +99,11 @@ main = runInBody Deku.do
   where
     buttonKlass = "py-0.5 px-2 rounded border border-emerald-400 text-emerald-400 text-sm font-medium bg-emerald-500/10 hover:bg-emerald-500/25"
     containerKlass = "p-4 bg-slate-700"
+    rangeKlass =
+      "cursor-pointer appearance-none bg-transparent \
+        \[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-emerald-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:-mt-1.5 \
+        \[&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:bg-emerald-400/50 [&::-webkit-slider-runnable-track]:rounded-full \
+        \[&::-ms-fill-lower]:bg-emerald-400"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment =
