@@ -81,7 +81,7 @@ main = runInBody Deku.do
     [ D.div
         (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
         [ descriptionPanel ~~ {}
-        , D.div (klass_ $ containerKlass <> " max-w-max space-y-2")
+        , D.div (klass_ $ containerKlass <> " max-w-max space-y-2.5")
             [ D.label (D.For !:= "length" <|> klass_ labelKlass) [text_ "Length"]
             , D.div (klass_ "flex gap-4 items-center")
                 [ D.button (klass_ buttonKlass <|> click_ (dec unit)) [text_ "-1"]
@@ -105,8 +105,8 @@ main = runInBody Deku.do
     ]
   where
     buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
-    containerKlass = "p-4 bg-slate-700 rounded-lg border-2 border-slate-600"
-    labelKlass = "font-bold italic text-slate-300 inline-block -translate-y-2 tracking-wider"
+    containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
+    labelKlass = "font-bold italic text-slate-300 inline-block"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment =
