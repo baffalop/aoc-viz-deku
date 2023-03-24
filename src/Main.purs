@@ -29,6 +29,7 @@ import Deku.Listeners (slider_)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold, withLast)
+import FRP.Event.Class ((<|*))
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 import Web.Event.Event (stopPropagation)
@@ -184,7 +185,5 @@ vectorFromKey = case _ of
   _ -> Nothing
 
 dedup :: forall a. Eq a => Event a -> Event a
-dedup =
-  withLast
-  >>> filter (\{ last, now } -> Just now /= last)
-  >>> (_ <#> _.now)
+dedup event =
+  event <|* (filter (\{ last, now } -> Just now /= last) $ withLast event)
