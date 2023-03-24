@@ -6,7 +6,7 @@
     "dev": "vite dev",
     "purs": "spago build --watch",
     "build": "spago build && vite build",
-    "pages": "gh-pages -d dist"
+    "pages": "spago build && gh-pages -d dist"
   },
   "browserslist": "defaults, not ie <= 11",
   "dependencies": {
