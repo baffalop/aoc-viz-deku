@@ -24,7 +24,7 @@ import Deku.Control (text)
 import Deku.Core (Domable, Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useMemoized, useState)
+import Deku.Hooks (useEffect, useMemoized, useState)
 import Deku.Listeners (slider_)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
@@ -52,6 +52,9 @@ maxLength = 30
 main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
+
+  useEffect (length <|* filter (_ == "KeyA") Key.down) $ setLength <<< (_ + 1)
+  useEffect (length <|* filter (_ == "KeyS") Key.down) $ setLength <<< (_ - 1)
 
   let
     head :: Event Point
