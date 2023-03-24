@@ -1,6 +1,5 @@
 module Main
   ( main
-  , follow
   )
   where
 
