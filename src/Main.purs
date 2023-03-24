@@ -20,16 +20,16 @@ import Data.Ord (signum)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
-import Deku.Control (text)
+import Deku.Control (text, text_)
 import Deku.Core (Domable, Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useEffect, useMemoized, useState)
-import Deku.Listeners (slider_)
+import Deku.Hooks (useEffect, useMemoized, useState, useState')
+import Deku.Listeners (click_, slider_)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold, withLast)
-import FRP.Event.Class ((<|*))
+import FRP.Event.Class ((*|>), (<|*))
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 import Web.Event.Event (stopPropagation)
@@ -52,9 +52,13 @@ maxLength = 30
 main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
+  inc /\ incremented <- useState'
+  dec /\ decremented <- useState'
 
-  useEffect (length <|* filter (_ == "KeyA") Key.down) $ setLength <<< (_ + 1)
-  useEffect (length <|* filter (_ == "KeyS") Key.down) $ setLength <<< (_ - 1)
+  useEffect (incremented *|> length) $ setLength <<< (_ + 1)
+  useEffect (decremented *|> length) $ setLength <<< (_ - 1)
+  useEffect (unit <$ filter (_ == "KeyA") Key.down) inc
+  useEffect (unit <$ filter (_ == "KeyS") Key.down) dec
 
   let
     head :: Event Point
@@ -66,7 +70,12 @@ main = runInBody Deku.do
     [ D.div
         (klass_ "bg-slate-800 p-8 flex flex-col gap-8 text-slate-100 h-screen")
         [ D.div (klass_ $ containerKlass <> " space-x-4 max-w-max")
-            [ D.input
+            [ D.button
+                Alt.do
+                  klass_ buttonKlass
+                  click_ $ dec unit
+                [text_ "-1"]
+            , D.input
                 Alt.do
                   slider_ $ setLength <<< trunc
                   D.OnKeydown !:= cb stopPropagation
@@ -77,12 +86,18 @@ main = runInBody Deku.do
                   D.Max !:= show maxLength
               []
             , D.span_ [text $ show <$> length]
+            , D.button
+                Alt.do
+                  klass_ buttonKlass
+                  click_ $ inc unit
+                [text_ "+1"]
             ]
         , D.div (klass_ $ containerKlass <> " flex-1 relative")
             $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
         ]
     ]
   where
+    buttonKlass = "py-0.5 px-2 rounded border border-emerald-400 text-emerald-400 text-sm font-medium bg-emerald-500/10 hover:bg-emerald-500/25"
     containerKlass = "p-4 bg-slate-700"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
