@@ -186,5 +186,5 @@ vectorFromKey = case _ of
 dedup :: forall a. Eq a => Event a -> Event a
 dedup =
   withLast
-  >>> filter (\{ last, now } -> Just now == last)
+  >>> filter (\{ last, now } -> Just now /= last)
   >>> (_ <#> _.now)
