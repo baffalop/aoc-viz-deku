@@ -189,4 +189,4 @@ vectorFromKey = case _ of
 
 dedup :: forall a. Eq a => Event a -> Event a
 dedup event =
-  event <|* (filter (\{ last, now } -> Just now /= last) $ withLast event)
+  event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
