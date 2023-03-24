@@ -1,5 +1,5 @@
 { sources = [ "./src/**/*.purs" ]
-, name = "deku-starter"
+, name = "aoc-viz-deku"
 , dependencies =
   [ "arrays"
   , "control"
