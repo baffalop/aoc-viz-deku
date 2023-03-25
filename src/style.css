@@ -28,13 +28,13 @@ input[type=range]::-webkit-slider-runnable-track {
 
 input[type=checkbox].switch {
   @apply appearance-none relative h-6 w-10 bg-transparent border border-teal-400 rounded-full cursor-pointer
-    transition-colors duration-200;
+    transition-colors duration-100;
 }
 
 input[type=checkbox].switch::after {
   content: '';
   transition-property: position color;
-  @apply absolute left-0 w-5 h-5 mt-px mx-px rounded-full bg-teal-400/60 duration-200;
+  @apply absolute left-0 w-5 h-5 mt-px mx-px rounded-full bg-teal-400/60 duration-100 ease-in-out;
 }
 
 input[type=checkbox].switch:hover::after {
