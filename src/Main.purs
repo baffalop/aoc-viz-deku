@@ -53,16 +53,17 @@ maxLength = 30
 main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
-  inc /\ incremented <- useState'
-  dec /\ decremented <- useState'
-
   setGrowMode /\ grow <- useState true
-  useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
 
-  useEffect (incremented *|> length # filter (_ < maxLength)) $ setLength <<< (_ + 1)
-  useEffect (decremented *|> length # filter (_ > 1))         $ setLength <<< (_ - 1)
-  useEffect (unit <$ filter (_ == "KeyA") Key.down) inc
-  useEffect (unit <$ filter (_ == "KeyS") Key.down) dec
+  inc /\ lengthInc'd <- useState'
+  dec /\ lengthDec'd <- useState'
+  useEffect (lengthInc'd *|> length # filter (_ < maxLength)) $ setLength <<< (_ + 1)
+  useEffect (lengthDec'd *|> length # filter (_ > 1))         $ setLength <<< (_ - 1)
+  let incLength /\ decLength = inc unit /\ dec unit
+
+  useEffect (filter (_ == "KeyA") Key.down) $ const incLength
+  useEffect (filter (_ == "KeyS") Key.down) $ const decLength
+  useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
 
   let
     head :: Event Point
@@ -78,7 +79,7 @@ main = runInBody Deku.do
   <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
 </div>"""
 
-  rope :: Array (Event (Maybe Segment)) <- makeRope head length grow (inc unit)
+  rope :: Array (Event (Maybe Segment)) <- makeRope head length grow incLength
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
@@ -87,7 +88,7 @@ main = runInBody Deku.do
         [ D.div (klass_ controlsKlass)
             [ D.label (D.For !:= "length" <|> klass_ labelKlass) [text_ "Length"]
             , D.div (klass_ "flex gap-4 items-center")
-                [ D.button (klass_ buttonKlass <|> click_ (dec unit)) [text_ "-1"]
+                [ D.button (klass_ buttonKlass <|> click_ decLength) [text_ "-1"]
                 , D.input
                     Alt.do
                       slider_ $ setLength <<< trunc
@@ -98,7 +99,7 @@ main = runInBody Deku.do
                       D.Min !:= "1"
                       D.Max !:= show maxLength
                   []
-                , D.button (klass_ buttonKlass <|> click_ (inc unit)) [text_ "+1"]
+                , D.button (klass_ buttonKlass <|> click_ incLength) [text_ "+1"]
                 , D.span (klass_ "w-4") [text $ show <$> length]
                 ]
             ]
@@ -166,7 +167,7 @@ ropeSegment klasses segment =
       { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
 
 makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
-makeRope initialHead length grow inc f = unfold 1 (Just <$> initialHead) []
+makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) []
   where
     unfold i head rope
       | i > maxLength = f rope
@@ -183,7 +184,7 @@ makeRope initialHead length grow inc f = unfold 1 (Just <$> initialHead) []
           growth :: Event Point
           growth = gate canGrow headMovedFrom
 
-        useEffect growth $ const inc
+        useEffect growth $ const incLength
 
         tail <- useMemoized $ dedup $ fold maybeFollow Nothing ado
           len <- length
