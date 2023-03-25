@@ -105,7 +105,7 @@ main = runInBody Deku.do
                 ]
             ]
         , D.div (klass_ controlsKlass)
-            [ D.label (D.For !:= "grow" <|> klass_ labelKlass) [text_ "Grow mode"]
+            [ D.label (D.For !:= "grow" <|> klass_ labelKlass) [text_ "Grow as I move"]
             , D.input
                 Alt.do
                   D.Xtype !:= "checkbox"
