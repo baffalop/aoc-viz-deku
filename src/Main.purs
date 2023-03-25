@@ -77,11 +77,11 @@ main = runInBody Deku.do
 
   rope :: Array (Event (Maybe Segment)) <- makeRope length head
 
-  D.div
-    (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
-    [ descriptionPanel ~~ {}
-    , D.div (klass_ "flex gap-6 justify-start items-stretch")
-        [ D.div (klass_ controlsKlass)
+  fixed
+    [ D.div
+        (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
+        [ descriptionPanel ~~ {}
+        , D.div (klass_ $ containerKlass <> " max-w-max space-y-2.5")
             [ D.label (D.For !:= "length" <|> klass_ labelKlass) [text_ "Length"]
             , D.div (klass_ "flex gap-4 items-center")
                 [ D.button (klass_ buttonKlass <|> click_ (dec unit)) [text_ "-1"]
@@ -99,23 +99,14 @@ main = runInBody Deku.do
                 , D.span (klass_ "w-4") [text $ show <$> length]
                 ]
             ]
-        , D.div (klass_ controlsKlass)
-            [ D.label (klass_ labelKlass) [text_ "Grow mode"]
-            , D.input
-                Alt.do
-                  klass_ "switch"
-                  D.Xtype !:= "checkbox"
-                []
-            ]
+        , D.div (klass_ $ containerKlass <> " flex-1 relative")
+            $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
         ]
-    , D.div (klass_ $ containerKlass <> " flex-1 relative")
-        $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
     ]
   where
     buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
     containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
-    controlsKlass = containerKlass <> " max-w-max space-y-2.5"
-    labelKlass = "font-bold italic text-slate-300 block"
+    labelKlass = "font-bold italic text-slate-300 inline-block"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment =
