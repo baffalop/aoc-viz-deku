@@ -59,8 +59,8 @@ main = runInBody Deku.do
   setGrowMode /\ grow <- useState true
   useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
 
-  useEffect (incremented *|> length) $ setLength <<< (_ + 1)
-  useEffect (decremented *|> length) $ setLength <<< (_ - 1)
+  useEffect (incremented *|> length # filter (_ < maxLength)) $ setLength <<< (_ + 1)
+  useEffect (decremented *|> length # filter (_ > 1))         $ setLength <<< (_ - 1)
   useEffect (unit <$ filter (_ == "KeyA") Key.down) inc
   useEffect (unit <$ filter (_ == "KeyS") Key.down) dec
 
