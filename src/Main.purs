@@ -11,7 +11,6 @@ import Control.Apply (lift2)
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
-import Data.Foldable (oneOf)
 import Data.Int (toNumber, trunc)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
@@ -79,16 +78,7 @@ main = runInBody Deku.do
   <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
 </div>"""
 
-  rope :: Array (Event (Maybe Segment)) <- makeRope head length grow
-
-  let
-    indexedRope :: Event (Indexed Segment)
-    indexedRope = indexed $ compact <$> rope
-
-    growth :: Event Point
-    growth = _.value.tail <$> filterWith length (\l { i } -> l == i) indexedRope
-
-  useEffect (unit <$ growth) inc
+  rope :: Array (Event (Maybe Segment)) <- makeRope head length grow (inc unit)
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
@@ -175,8 +165,8 @@ ropeSegment klasses segment =
       { x: -1.0, y: 0.0 } -> 0.5
       { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
 
-makeRope :: Event Point -> Event Int -> Event Boolean -> Hook (Array (Event (Maybe Segment)))
-makeRope initialHead length grow f = unfold 1 (Just <$> initialHead) []
+makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
+makeRope initialHead length grow inc f = unfold 1 (Just <$> initialHead) []
   where
     unfold i head rope
       | i > maxLength = f rope
@@ -190,14 +180,19 @@ makeRope initialHead length grow f = unfold 1 (Just <$> initialHead) []
             { last: Just (Just last), now: Just now } | last /= now -> Just last
             _ -> Nothing
 
+          growth :: Event Point
+          growth = gate canGrow headMovedFrom
+
+        useEffect growth $ const inc
+
         tail <- useMemoized $ dedup $ fold maybeFollow Nothing ado
           len <- length
           head' <- compact head
-          growth <- Alt.do
+          growth' <- Alt.do
             pure Nothing
-            gate canGrow $ Just <$> headMovedFrom
+            Just <$> growth
             Nothing <$ filter not canGrow
-          in maybeIf (i <= len) head' <|> growth
+          in maybeIf (i <= len) head' <|> growth'
 
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
 
@@ -254,11 +249,3 @@ vectorFromKey = case _ of
 dedup :: forall a. Eq a => Event a -> Event a
 dedup event =
   event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
-
-type Indexed a = { i :: Int, value :: a }
-
-indexed :: forall a. Array (Event a) -> Event (Indexed a)
-indexed = oneOf <<< Array.mapWithIndex (\i e -> { i, value: _ } <$> e)
-
-filterWith :: forall a b. Event a -> (a -> b -> Boolean) -> Event b -> Event b
-filterWith e f subject = gate (f <$> e <*> subject) subject
