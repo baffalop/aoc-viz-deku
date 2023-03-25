@@ -17,6 +17,7 @@ import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
+import Data.Tuple (Tuple(..), snd, uncurry)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
@@ -82,14 +83,13 @@ main = runInBody Deku.do
   rope :: Array (Event (Maybe Segment)) <- makeRope head length
 
   let
-    tailMoved :: Event Unit
-    tailMoved =
-      (unit <$ _)
-        $ filter identity
-        $ ((==) <<< (_ - 1)) <$> length <*> oneOf (Array.mapWithIndex (\i e -> i <$ compact e) rope)
+    tail :: Event Point
+    tail = (_.value.tail <$> _)
+      $ filterWith length (\l { i } -> i == l - 1)
+      $ indexed $ compact <$> rope
 
     doGrow :: Event Unit
-    doGrow = gate grow $ (unit <$ _) $ dedup $ head <|* tailMoved
+    doGrow = gate grow $ (unit <$ _) $ dedup $ head <|* (unit <$ dedup tail)
 
   useEffect doGrow inc
 
@@ -242,3 +242,9 @@ vectorFromKey = case _ of
 dedup :: forall a. Eq a => Event a -> Event a
 dedup event =
   event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
+
+indexed :: forall a. Array (Event a) -> Event { i :: Int, value :: a }
+indexed = oneOf <<< Array.mapWithIndex (\i e -> { i, value: _ } <$> e)
+
+filterWith :: forall a b. Event a -> (a -> b -> Boolean) -> Event b -> Event b
+filterWith e f subject = snd <$> filter (uncurry f) (Tuple <$> e <*> subject)
