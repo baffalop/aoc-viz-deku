@@ -50,6 +50,17 @@ initLength = 1
 maxLength :: Int
 maxLength = 30
 
+descriptionPanel :: Proxy """
+<div class="w-56 space-y-3 row-span-full">
+  <h1 class="font-bold text-4xl text-red-400 italic mb-6 tracking-wider">Rope/snake</h1>
+  <p>This is a visualisation of the Rope Bridge puzzle from
+    <a href="https://adventofcode.com/2022/day/9">Advent of Code 2022 day 9</a>.</p>
+  <p>I used it as a playground to explore <a href="https://purescript-deku.netlify.app/">Deku</a>,
+    a VDOMless Purescript framework based on Functional Reactive Programming.</p>
+  <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
+</div>""" -- """
+descriptionPanel = Proxy
+
 main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
@@ -68,16 +79,6 @@ main = runInBody Deku.do
   let
     head :: Event Point
     head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
-
-    descriptionPanel = Proxy :: Proxy """
-<div class="w-56 space-y-3 row-span-full">
-  <h1 class="font-bold text-4xl text-red-400 italic mb-6 tracking-wider">Rope/snake</h1>
-  <p>This is a visualisation of the Rope Bridge puzzle from
-    <a href="https://adventofcode.com/2022/day/9">Advent of Code 2022 day 9</a>.</p>
-  <p>I used it as a playground to explore <a href="https://purescript-deku.netlify.app/">Deku</a>,
-    a VDOMless Purescript framework based on Functional Reactive Programming.</p>
-  <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
-</div>"""
 
   rope :: Array (Event (Maybe Segment)) <- makeRope head length grow incLength
 
