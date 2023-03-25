@@ -11,6 +11,7 @@ import Control.Apply (lift2)
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter)
+import Data.Foldable (oneOf)
 import Data.Int (toNumber, trunc)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
@@ -45,7 +46,7 @@ origin :: Point
 origin = { x: 0, y: 0 }
 
 initLength :: Int
-initLength = 10
+initLength = 3
 
 maxLength :: Int
 maxLength = 30
@@ -78,7 +79,19 @@ main = runInBody Deku.do
   <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
 </div>"""
 
-  rope :: Array (Event (Maybe Segment)) <- makeRope head length grow inc
+  rope :: Array (Event (Maybe Segment)) <- makeRope head length
+
+  let
+    tailMoved :: Event Unit
+    tailMoved =
+      (unit <$ _)
+        $ filter identity
+        $ ((==) <<< (_ - 1)) <$> length <*> oneOf (Array.mapWithIndex (\i e -> i <$ compact e) rope)
+
+    doGrow :: Event Unit
+    doGrow = gate grow $ (unit <$ _) $ dedup $ head <|* tailMoved
+
+  useEffect doGrow inc
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
@@ -165,24 +178,15 @@ ropeSegment klasses segment =
       { x: -1.0, y: 0.0 } -> 0.5
       { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
 
-makeRope :: Event Point -> Event Int -> Event Boolean -> (Unit -> Effect Unit) -> Hook (Array (Event (Maybe Segment)))
-makeRope initialHead length grow inc f = unfold 1 (Just <$> initialHead) []
+makeRope :: Event Point -> Event Int -> Hook (Array (Event (Maybe Segment)))
+makeRope initialHead length f = unfold 1 (Just <$> initialHead) []
   where
     unfold i head rope
       | i > maxLength = f rope
       | otherwise = Deku.do
-        let
-          head' :: Event Point
-          head' = compact head
-
-          doGrow :: Event Unit
-          doGrow = gate ((&&) <$> grow <*> ((i - 1 == _) <$> length)) $ unit <$ head'
-
-        useEffect doGrow inc
-
         tail <- useMemoized $ dedup
           $ fold maybeFollow Nothing
-          $ maybeIf <<< (i <= _) <$> length <*> head'
+          $ maybeIf <<< (i <= _) <$> length <*> compact head
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
 
         unfold (i + 1) tail $ Array.snoc rope segment
