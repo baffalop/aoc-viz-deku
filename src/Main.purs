@@ -71,7 +71,7 @@ main = runInBody Deku.do
   <p>This is a visualisation of the Rope Bridge puzzle from
     <a href="https://adventofcode.com/2022/day/9">Advent of Code 2022 day 9</a>.</p>
   <p>I used it as a playground to explore <a href="https://purescript-deku.netlify.app/">Deku</a>,
-    a VDOMless Purescript framework based on FRP.</p>
+    a VDOMless Purescript framework based on Functional Reactive Programming.</p>
   <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
 </div>"""
 
