@@ -17,7 +17,6 @@ import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
-import Data.Tuple (Tuple(..), snd, uncurry)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
@@ -247,4 +246,4 @@ indexed :: forall a. Array (Event a) -> Event { i :: Int, value :: a }
 indexed = oneOf <<< Array.mapWithIndex (\i e -> { i, value: _ } <$> e)
 
 filterWith :: forall a b. Event a -> (a -> b -> Boolean) -> Event b -> Event b
-filterWith e f subject = snd <$> filter (uncurry f) (Tuple <$> e <*> subject)
+filterWith e f subject = gate (f <$> e <*> subject) subject
