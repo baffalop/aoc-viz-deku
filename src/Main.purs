@@ -192,12 +192,12 @@ makeRope initialHead length grow f = unfold 1 (Just <$> initialHead) []
 
         tail <- useMemoized $ dedup $ fold maybeFollow Nothing ado
           len <- length
-          leader <- compact head
+          head' <- compact head
           growth <- Alt.do
             pure Nothing
             gate canGrow $ Just <$> headMovedFrom
             Nothing <$ filter not canGrow
-          in growth <|> maybeIf (i <= len) leader
+          in growth <|> maybeIf (i <= len) head'
 
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
 
