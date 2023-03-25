@@ -82,15 +82,13 @@ main = runInBody Deku.do
   rope :: Array (Event (Maybe Segment)) <- makeRope head length grow
 
   let
-    tail :: Event Point
-    tail = (_.value.tail <$> _)
-      $ filterWith length (\l { i } -> i == l - 1)
-      $ indexed $ compact <$> rope
+    indexedRope :: Event (Indexed Segment)
+    indexedRope = indexed $ compact <$> rope
 
-    doGrow :: Event Unit
-    doGrow = gate grow $ (unit <$ _) $ dedup $ head <|* (unit <$ dedup tail)
+    growth :: Event Point
+    growth = _.value.tail <$> filterWith length (\l { i } -> l == i) indexedRope
 
-  -- useEffect doGrow inc
+  -- useEffect (unit <$ growth) inc -- STACK EXPLOSION
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
@@ -193,9 +191,13 @@ makeRope initialHead length grow f = unfold 1 (Just <$> initialHead) []
             _ -> Nothing
 
         tail <- useMemoized $ dedup $ fold maybeFollow Nothing ado
-          growth <- pure Nothing <|> gate canGrow (Just <$> headMovedFrom)
-          tail <- maybeIf <<< (i <= _) <$> length <*> compact head
-          in growth <|> tail
+          len <- length
+          leader <- compact head
+          growth <- Alt.do
+            pure Nothing
+            gate canGrow $ Just <$> headMovedFrom
+            Nothing <$ filter not canGrow
+          in growth <|> maybeIf (i <= len) leader
 
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
 
@@ -253,7 +255,9 @@ dedup :: forall a. Eq a => Event a -> Event a
 dedup event =
   event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
 
-indexed :: forall a. Array (Event a) -> Event { i :: Int, value :: a }
+type Indexed a = { i :: Int, value :: a }
+
+indexed :: forall a. Array (Event a) -> Event (Indexed a)
 indexed = oneOf <<< Array.mapWithIndex (\i e -> { i, value: _ } <$> e)
 
 filterWith :: forall a b. Event a -> (a -> b -> Boolean) -> Event b -> Event b
