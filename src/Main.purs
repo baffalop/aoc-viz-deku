@@ -20,15 +20,15 @@ import Data.Tuple.Nested ((/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
-import Deku.Core (Domable, Nut, fixed)
+import Deku.Core (Domable, Nut)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useEffect, useMemoized, useState, useState')
-import Deku.Listeners (click_, slider_)
+import Deku.Listeners (click, click_, slider_)
 import Deku.Pursx ((~~))
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
-import FRP.Event (Event, fold, withLast)
+import FRP.Event (Event, fold, gate, withLast)
 import FRP.Event.Class ((*|>), (<|*))
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
@@ -56,6 +56,9 @@ main = runInBody Deku.do
   inc /\ incremented <- useState'
   dec /\ decremented <- useState'
 
+  setGrowMode /\ grow <- useState true
+  useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
+
   useEffect (incremented *|> length) $ setLength <<< (_ + 1)
   useEffect (decremented *|> length) $ setLength <<< (_ - 1)
   useEffect (unit <$ filter (_ == "KeyA") Key.down) inc
@@ -75,7 +78,7 @@ main = runInBody Deku.do
   <p>View the <a href="https://github.com/baffalop/aoc-viz-deku">source</a>.</p>
 </div>"""
 
-  rope :: Array (Event (Maybe Segment)) <- makeRope length head
+  rope :: Array (Event (Maybe Segment)) <- makeRope head length grow inc
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
@@ -100,11 +103,14 @@ main = runInBody Deku.do
                 ]
             ]
         , D.div (klass_ controlsKlass)
-            [ D.label (klass_ labelKlass) [text_ "Grow mode"]
+            [ D.label (D.For !:= "grow" <|> klass_ labelKlass) [text_ "Grow mode"]
             , D.input
                 Alt.do
-                  klass_ "switch"
                   D.Xtype !:= "checkbox"
+                  D.Name !:= "grow"
+                  D.Checked <:=> show <$> grow
+                  click $ setGrowMode <<< not <$> grow
+                  klass_ "switch"
                 []
             ]
         ]
@@ -159,16 +165,26 @@ ropeSegment klasses segment =
       { x: -1.0, y: 0.0 } -> 0.5
       { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
 
-makeRope :: Event Int -> Event Point -> Hook (Array (Event (Maybe Segment)))
-makeRope length initialHead f = unfold 1 (Just <$> initialHead) []
+makeRope :: Event Point -> Event Int -> Event Boolean -> (Unit -> Effect Unit) -> Hook (Array (Event (Maybe Segment)))
+makeRope initialHead length grow inc f = unfold 1 (Just <$> initialHead) []
   where
     unfold i head rope
       | i > maxLength = f rope
       | otherwise = Deku.do
+        let
+          head' :: Event Point
+          head' = compact head
+
+          doGrow :: Event Unit
+          doGrow = gate ((&&) <$> grow <*> ((i - 1 == _) <$> length)) $ unit <$ head'
+
+        useEffect doGrow inc
+
         tail <- useMemoized $ dedup
           $ fold maybeFollow Nothing
-          $ maybeIf <<< (i <= _) <$> length <*> compact head
+          $ maybeIf <<< (i <= _) <$> length <*> head'
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
+
         unfold (i + 1) tail $ Array.snoc rope segment
 
 maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
