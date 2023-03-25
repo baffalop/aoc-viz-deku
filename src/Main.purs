@@ -45,7 +45,7 @@ origin :: Point
 origin = { x: 0, y: 0 }
 
 initLength :: Int
-initLength = 3
+initLength = 1
 
 maxLength :: Int
 maxLength = 30
