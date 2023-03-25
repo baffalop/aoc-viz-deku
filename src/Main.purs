@@ -88,7 +88,7 @@ main = runInBody Deku.do
     growth :: Event Point
     growth = _.value.tail <$> filterWith length (\l { i } -> l == i) indexedRope
 
-  -- useEffect (unit <$ growth) inc -- STACK EXPLOSION
+  useEffect (unit <$ growth) inc
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
@@ -197,7 +197,7 @@ makeRope initialHead length grow f = unfold 1 (Just <$> initialHead) []
             pure Nothing
             gate canGrow $ Just <$> headMovedFrom
             Nothing <$ filter not canGrow
-          in growth <|> maybeIf (i <= len) head'
+          in maybeIf (i <= len) head' <|> growth
 
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
 
