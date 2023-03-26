@@ -175,7 +175,10 @@ makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) [
       | otherwise = Deku.do
         let
           canGrow :: Event Boolean
-          canGrow = (&&) <$> grow <*> ((i > _) <$> length)
+          canGrow = ado
+            growModeOn <- grow
+            len <- length
+            in growModeOn && i > len
 
           headMovedFrom :: Event Point
           headMovedFrom = withLast head # filterMap case _ of
