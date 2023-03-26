@@ -188,14 +188,16 @@ makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) [
           growth :: Event Point
           growth = gate canGrow headMovedFrom
 
+          leader :: Event (Maybe Point)
+          leader = ado
+            len <- length
+            head' <- compact head
+            growth' <- Just <$> growth <|> Nothing <$ filter not canGrow
+            in maybeIf (i <= len) head' <|> growth'
+
         useEffect growth $ const incLength
 
-        tail <- useMemoized $ dedup $ fold maybeFollow Nothing ado
-          len <- length
-          head' <- compact head
-          growth' <- Just <$> growth <|> Nothing <$ filter not canGrow
-          in maybeIf (i <= len) head' <|> growth'
-
+        tail <- useMemoized $ dedup $ fold maybeFollow Nothing leader
         segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
 
         unfold (i + 1) tail $ Array.snoc rope segment
