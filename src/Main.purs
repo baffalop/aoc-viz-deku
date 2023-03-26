@@ -148,11 +148,14 @@ ropeSegment klasses segment = Deku.do
         let
           { dx, dy } = delta tail head
           width = (sqrt (dx * dx + dy * dy) + 1.0) * weight
+          halfWeightPctWidth = (halfWeight / width) * 100.0
         in
         i "width: "width"rem; \
           \height: "weight"rem; \
+          \left: calc(50% + "(offset tail.x)"rem); \
+          \top: calc(50% + "(offset tail.y)"rem); \
           \transform: \
-            \translate("(trans tail.x)"rem, "(trans tail.y)"rem) \
+            \translate(-"halfWeightPctWidth"%, -50%) \
             \rotate("turns"turn); \
           \transform-origin: "halfWeight"rem "halfWeight"rem;"
 
@@ -161,8 +164,8 @@ ropeSegment klasses segment = Deku.do
     weight = 1.5
     halfWeight = weight / 2.0
 
-    trans :: Int -> Number
-    trans v = (toNumber v * weight) - halfWeight
+    offset :: Int -> Number
+    offset v = (toNumber v * weight) - halfWeight
 
     segment' :: Event Segment
     segment' = compact segment
