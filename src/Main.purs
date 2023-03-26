@@ -30,7 +30,7 @@ import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold, gate, withLast)
 import FRP.Event.AnimationFrame (animationFrame)
-import FRP.Event.Class ((*|>), (<|*))
+import FRP.Event.Class ((*|>), (<*|>), (<|*))
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
@@ -132,8 +132,8 @@ ropeSegment klasses segment = Deku.do
     { gone: "hidden"
     , here: "absolute"
     , enterFrom: "!w-0 !h-0"
-    , enterTo: ""
-    , leaveFrom: ""
+    , enterTo: "w-6"
+    , leaveFrom: "w-6"
     , leaveTo: "!w-0 !h-0"
     }
 
@@ -201,7 +201,11 @@ transition exists klasses f = Deku.do
   setState /\ state <- useState Gone
   onTransitionend /\ transitionend <- useState'
 
-  useEffect exists \e -> setState $ if e then BeforeEnter else BeforeLeave
+  useEffect ((/\) <$> exists <*|> state) case _ of
+    true /\ Here -> pure unit
+    true /\ _ -> setState BeforeEnter
+    false /\ Gone -> pure unit
+    false /\ _ -> setState BeforeLeave
 
   useEffect (animationFrame *|> state) case _ of
     BeforeEnter -> setState Entering
