@@ -51,6 +51,9 @@ initLength = 1
 maxLength :: Int
 maxLength = 30
 
+segmentWeightPx :: Int
+segmentWeightPx = 24
+
 descriptionPanel :: Proxy """
 <div class="w-56 space-y-3 row-span-full">
   <h1 class="font-bold text-4xl text-red-400 italic mb-6 tracking-wider">Rope/snake</h1>
@@ -147,25 +150,24 @@ ropeSegment klasses segment = Deku.do
         turns <- turnsState
         let
           { dx, dy } = delta tail head
-          width = (sqrt (dx * dx + dy * dy) + 1.0) * weight
-          halfWeightPctWidth = (halfWeight / width) * 100.0
+          width = (sqrt (dx * dx + dy * dy) + 1.0) * toNumber segmentWeightPx
+          halfWeightPctWidth = (toNumber halfWeight / width) * 100.0
         in
-        i "width: "width"rem; \
-          \height: "weight"rem; \
-          \left: calc(50% + "(offset tail.x)"rem); \
-          \top: calc(50% + "(offset tail.y)"rem); \
+        i "width: "width"px; \
+          \height: "segmentWeightPx"px; \
+          \left: calc(50% + "(offset tail.x)"px); \
+          \top: calc(50% + "(offset tail.y)"px); \
           \transform: \
             \translate(-"halfWeightPctWidth"%, -50%) \
             \rotate("turns"turn); \
-          \transform-origin: "halfWeight"rem "halfWeight"rem;"
+          \transform-origin: "halfWeight"px "halfWeight"px;"
 
     []
   where
-    weight = 1.5
-    halfWeight = weight / 2.0
+    halfWeight = segmentWeightPx / 2
 
-    offset :: Int -> Number
-    offset v = (toNumber v * weight) - halfWeight
+    offset :: Int -> Int
+    offset v = (v * segmentWeightPx) - halfWeight
 
     segment' :: Event Segment
     segment' = compact segment
