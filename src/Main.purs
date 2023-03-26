@@ -222,9 +222,9 @@ follow follower target = do
      { dx, dy } = delta follower target
 
 add :: Point -> Point -> Point
-add c1 c2 =
-  { x: c1.x + c2.x
-  , y: c1.y + c2.y
+add p1 p2 =
+  { x: p1.x + p2.x
+  , y: p1.y + p2.y
   }
 
 delta :: Point -> Point -> Vec
