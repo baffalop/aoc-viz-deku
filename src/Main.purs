@@ -78,7 +78,7 @@ main = runInBody Deku.do
 
   let
     head :: Event Point
-    head = pure origin <|> fold add origin (compact $ vectorFromKey <$> Key.down)
+    head = pure origin <|> fold add origin (filterMap vectorFromKey Key.down)
 
   rope :: Array (Event (Maybe Segment)) <- makeRope head length grow incLength
 
