@@ -8,6 +8,7 @@ import Prelude hiding (add)
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
 import Control.Apply (lift2)
+import Data.Array ((:))
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
@@ -17,7 +18,6 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
 import Data.Tuple.Nested ((/\), type (/\))
-import Debug (spy)
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
@@ -75,8 +75,6 @@ main = runInBody Deku.do
   setGrowMode /\ grow <- useState true
   setTarget /\ target <- useState (Nothing :: Maybe Point)
 
-  useEffect target $ spy "target" >>> const (pure unit)
-
   inc /\ lengthInc'd <- useState'
   dec /\ lengthDec'd <- useState'
   useEffect (lengthInc'd *|> length # filter (_ < maxLength)) $ setLength <<< (_ + 1)
@@ -90,6 +88,9 @@ main = runInBody Deku.do
   let
     head :: Event Point
     head = pure origin <|> fold add origin (filterMap vectorFromKey Key.down)
+
+    targetEl :: Nut
+    targetEl = ropeSegment "border-yellow-500 bg-yellow-500/40" $ target <#> map \t -> { head: t, tail: t }
 
   rope :: Array (Event (Maybe Segment)) <- makeRope head length grow incLength
 
@@ -130,8 +131,8 @@ main = runInBody Deku.do
     , D.div
         Alt.do
           klass_ $ containerKlass <> " flex-1 relative cursor-pointer"
-          click_ $ cb $ setTarget <<< mouseOffsetCoords
-        $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
+          click_ $ cb $ setTarget <<< map pointFromPx <<< mouseOffsetCoords
+        $ targetEl : (rope <#> ropeSegment "border-red-400 bg-red-500/40")
     ]
   where
     buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
@@ -309,6 +310,12 @@ delta :: Point -> Point -> Vec
 delta from to =
   { dx: toNumber $ to.x - from.x
   , dy: toNumber $ to.y - from.y
+  }
+
+pointFromPx :: Point -> Point
+pointFromPx { x, y } =
+  { x: x / segmentWeightPx
+  , y: y / segmentWeightPx
   }
 
 closest :: Number -> Number -> Number -> Number
