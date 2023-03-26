@@ -134,7 +134,9 @@ ropeSegment klasses segment =
         <> " rounded-full border transition-all duration-200 left-1/2 top-1/2 "
         <> klasses
 
-      style $ ((/\) <$> segment' <*> turnsState) <#> \({ head, tail } /\ turns) ->
+      style ado
+        { head, tail } <- segment'
+        turns <- turnsState
         let
           d = delta tail head
           width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * weight
