@@ -18,7 +18,9 @@
   , "qualified-do"
   , "tuples"
   , "web-cssom"
+  , "web-cssom-view"
   , "web-events"
+  , "web-html"
   , "web-uievents"
   ]
 , packages = ./packages.dhall

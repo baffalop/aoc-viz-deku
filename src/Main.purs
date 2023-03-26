@@ -36,8 +36,10 @@ import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
+import Web.CSSOMView.Window (devicePixelRatio)
 import Web.Event.Event (stopPropagation)
 import Web.Event.Event as WebEvent
+import Web.HTML (window)
 import Web.UIEvent.MouseEvent (fromEvent) as Mouse
 
 type Hook a = forall lock payload. (a -> Domable lock payload) -> Domable lock payload
@@ -131,7 +133,7 @@ main = runInBody Deku.do
     , D.div
         Alt.do
           klass_ $ containerKlass <> " flex-1 relative cursor-pointer"
-          click_ $ cb $ setTarget <<< map pointFromPx <<< mouseOffsetCoords
+          click_ $ cb $ setTarget <<< map pointFromPx <=< mouseOffsetCoordsCssPx
         $ targetEl : (rope <#> ropeSegment "border-red-400 bg-red-500/40")
     ]
   where
@@ -312,11 +314,11 @@ delta from to =
   , dy: toNumber $ to.y - from.y
   }
 
+mapBoth :: forall a b. (a -> b) -> { x :: a, y :: a } -> { x :: b, y :: b }
+mapBoth f { x, y } = { x: f x, y: f y }
+
 pointFromPx :: Point -> Point
-pointFromPx { x, y } =
-  { x: x / segmentWeightPx
-  , y: y / segmentWeightPx
-  }
+pointFromPx = mapBoth (_ / segmentWeightPx)
 
 closest :: Number -> Number -> Number -> Number
 closest to x y = case compare dx dy of
@@ -341,5 +343,12 @@ dedup :: forall a. Eq a => Event a -> Event a
 dedup event =
   event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
 
-mouseOffsetCoords :: WebEvent.Event -> Maybe Point
-mouseOffsetCoords e = ({ x: _, y: _ } <$> Mouse.offsetX <*> Mouse.offsetY) <$> Mouse.fromEvent e
+mouseOffsetCoordsCssPx :: WebEvent.Event -> Effect (Maybe Point)
+mouseOffsetCoordsCssPx ev = do
+  pixelRatio <- window >>= devicePixelRatio
+  pure do
+    e <- Mouse.fromEvent ev
+    pure $ mapBoth (toNumber >>> (_ / pixelRatio) >>> trunc)
+      { x: Mouse.offsetX e
+      , y: Mouse.offsetY e
+      }
