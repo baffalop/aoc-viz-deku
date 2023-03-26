@@ -13,10 +13,10 @@ import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
 import Data.Int (toNumber, trunc)
 import Data.Interpolate (i)
-import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
@@ -29,6 +29,7 @@ import Deku.Pursx ((~~))
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold, gate, withLast)
+import FRP.Event.AnimationFrame (animationFrame)
 import FRP.Event.Class ((*|>), (<|*))
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
@@ -126,13 +127,20 @@ main = runInBody Deku.do
     labelKlass = "font-bold italic text-slate-300 block"
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
-ropeSegment klasses segment =
+ropeSegment klasses segment = Deku.do
+  transitionend /\ transitionKlass <- transition (isJust <$> segment)
+    { gone: "hidden"
+    , here: "absolute"
+    , enterFrom: "!w-0 !h-0"
+    , enterTo: ""
+    , leaveFrom: ""
+    , leaveTo: "!w-0 !h-0"
+    }
+
   D.div
     Alt.do
-      klass $ segment <#> isNothing >>> \hidden ->
-        (if hidden then "hidden" else "absolute")
-        <> " rounded-full border transition-all duration-200 left-1/2 top-1/2 "
-        <> klasses
+      D.OnTransitionend !:= transitionend
+      klass $ transitionKlass <#> i klasses" rounded-full border transition-all duration-200 left-1/2 top-1/2 "
 
       style ado
         { head, tail } <- segment'
@@ -168,6 +176,57 @@ ropeSegment klasses segment =
     turnsIn { head, tail } = case delta tail head of
       { dx: -1.0, dy: 0.0 } -> 0.5
       { dx, dy } -> (dx - 2.0) * (-0.125) * signum dy
+
+type TransitionKlasses =
+  { here :: String
+  , gone :: String
+  , enterFrom :: String
+  , enterTo :: String
+  , leaveFrom :: String
+  , leaveTo :: String
+  }
+
+data TransitionState
+  = BeforeEnter
+  | Entering
+  | AfterEnter
+  | Here
+  | BeforeLeave
+  | Leaving
+  | AfterLeave
+  | Gone
+
+transition :: Event Boolean -> TransitionKlasses -> Hook (Effect Unit /\ Event String)
+transition exists klasses f = Deku.do
+  setState /\ state <- useState Gone
+  onTransitionend /\ transitionend <- useState'
+
+  useEffect exists \e -> setState $ if e then BeforeEnter else BeforeLeave
+
+  useEffect (animationFrame *|> state) case _ of
+    BeforeEnter -> setState Entering
+    AfterEnter -> setState Here
+    BeforeLeave -> setState Leaving
+    AfterLeave -> setState Gone
+    _ -> pure unit
+
+  useEffect (transitionend *|> state) case _ of
+    Entering -> setState Here
+    Leaving -> setState Gone
+    _ -> pure unit
+
+  let
+    klass = state <#> case _ of
+      BeforeEnter -> i klasses.here" "klasses.enterFrom
+      Entering    -> i klasses.here" "klasses.enterTo
+      AfterEnter  -> klasses.here
+      Here        -> klasses.here
+      BeforeLeave -> i klasses.here" "klasses.leaveFrom
+      Leaving     -> i klasses.here" "klasses.leaveTo
+      AfterLeave  -> klasses.gone
+      Gone        -> klasses.gone
+
+  f $ onTransitionend unit /\ klass
 
 makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
 makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) []
