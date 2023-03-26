@@ -17,6 +17,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
 import Data.Tuple.Nested ((/\), type (/\))
+import Debug (spy)
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
@@ -34,7 +35,10 @@ import FRP.Event.Class ((*|>), (<*|>), (<|*))
 import FRP.Event.Keyboard as Key
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
+import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.Event.Event (stopPropagation)
+import Web.Event.Event as WebEvent
+import Web.UIEvent.MouseEvent (fromEvent) as Mouse
 
 type Hook a = forall lock payload. (a -> Domable lock payload) -> Domable lock payload
 
@@ -69,6 +73,9 @@ main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
   setGrowMode /\ grow <- useState true
+  setTarget /\ target <- useState (Nothing :: Maybe Point)
+
+  useEffect target $ spy "target" >>> const (pure unit)
 
   inc /\ lengthInc'd <- useState'
   dec /\ lengthDec'd <- useState'
@@ -120,7 +127,10 @@ main = runInBody Deku.do
                 []
             ]
         ]
-    , D.div (klass_ $ containerKlass <> " flex-1 relative")
+    , D.div
+        Alt.do
+          klass_ $ containerKlass <> " flex-1 relative cursor-pointer"
+          click_ $ cb $ setTarget <<< mouseOffsetCoords
         $ rope <#> ropeSegment "border-red-400 bg-red-500/40"
     ]
   where
@@ -323,3 +333,6 @@ vectorFromKey = case _ of
 dedup :: forall a. Eq a => Event a -> Event a
 dedup event =
   event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
+
+mouseOffsetCoords :: WebEvent.Event -> Maybe Point
+mouseOffsetCoords e = ({ x: _, y: _ } <$> Mouse.offsetX <*> Mouse.offsetY) <$> Mouse.fromEvent e
