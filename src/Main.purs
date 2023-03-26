@@ -38,7 +38,7 @@ import Web.Event.Event (stopPropagation)
 type Hook a = forall lock payload. (a -> Domable lock payload) -> Domable lock payload
 
 type Point = { x :: Int, y :: Int }
-type Vec = { x :: Number, y :: Number }
+type Vec = { dx :: Number, dy :: Number }
 type Segment = { head :: Point, tail :: Point }
 
 origin :: Point
@@ -138,8 +138,8 @@ ropeSegment klasses segment =
         { head, tail } <- segment'
         turns <- turnsState
         let
-          d = delta tail head
-          width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * weight
+          { dx, dy } = delta tail head
+          width = (sqrt (dx * dx + dy * dy) + 1.0) * weight
         in
         i "width: "width"rem; \
           \height: "weight"rem; \
@@ -166,8 +166,8 @@ ropeSegment klasses segment =
 
     turnsIn :: Segment -> Number
     turnsIn { head, tail } = case delta tail head of
-      { x: -1.0, y: 0.0 } -> 0.5
-      { x: dx, y: dy } -> (dx - 2.0) * (-0.125) * signum dy
+      { dx: -1.0, dy: 0.0 } -> 0.5
+      { dx, dy } -> (dx - 2.0) * (-0.125) * signum dy
 
 makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
 makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) []
@@ -213,13 +213,13 @@ maybeFollow tailM headM = do
 
 follow :: Point -> Point -> Maybe Point
 follow follower target = do
-  guard $ abs d.x > 1.0 || abs d.y > 1.0
+  guard $ abs dx > 1.0 || abs dy > 1.0
   pure $ follower `add`
-    { x: trunc $ signum d.x
-    , y: trunc $ signum d.y
+    { x: trunc $ signum dx
+    , y: trunc $ signum dy
     }
   where
-    d = delta follower target
+     { dx, dy } = delta follower target
 
 add :: Point -> Point -> Point
 add c1 c2 =
@@ -229,8 +229,8 @@ add c1 c2 =
 
 delta :: Point -> Point -> Vec
 delta from to =
-  { x: toNumber $ to.x - from.x
-  , y: toNumber $ to.y - from.y
+  { dx: toNumber $ to.x - from.x
+  , dy: toNumber $ to.y - from.y
   }
 
 closest :: Number -> Number -> Number -> Number
