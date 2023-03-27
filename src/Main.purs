@@ -18,11 +18,11 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
 import Data.Traversable (traverse)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested ((/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
-import Deku.Core (Domable, Nut)
+import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useEffect, useMemoized, useState, useState')
@@ -31,14 +31,15 @@ import Deku.Pursx ((~~))
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold, gate, withLast)
-import FRP.Event.AnimationFrame (animationFrame)
-import FRP.Event.Class ((*|>), (<*|>), (<|*))
+import FRP.Event.Class ((*|>), (<|*))
 import FRP.Event.Keyboard as Key
 import FRP.Event.Time (interval)
 import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Utils.Basics (maybeIf, closest, cycleTo)
+import Utils.Deku (Hook, transition)
+import Utils.FRP (dedup)
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
 import Web.DOM.Element (getBoundingClientRect)
@@ -47,8 +48,6 @@ import Web.Event.Event (currentTarget, stopPropagation)
 import Web.Event.Event as WebEvent
 import Web.HTML (window)
 import Web.UIEvent.MouseEvent (fromEvent) as Mouse
-
-type Hook a = forall lock payload. (a -> Domable lock payload) -> Domable lock payload
 
 type Point = { x :: Int, y :: Int }
 type Vec = { dx :: Number, dy :: Number }
@@ -224,61 +223,6 @@ controlsKlass = containerKlass <> " max-w-max space-y-2.5"
 containerKlass :: String
 containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
 
-type TransitionKlasses =
-  { here :: String
-  , gone :: String
-  , enterFrom :: String
-  , enterTo :: String
-  , leaveFrom :: String
-  , leaveTo :: String
-  }
-
-data TransitionState
-  = BeforeEnter
-  | Entering
-  | AfterEnter
-  | Here
-  | BeforeLeave
-  | Leaving
-  | AfterLeave
-  | Gone
-
-transition :: Event Boolean -> TransitionKlasses -> Hook (Effect Unit /\ Event String)
-transition exists klasses f = Deku.do
-  setState /\ state <- useState Gone
-  onTransitionend /\ transitionend <- useState'
-
-  useEffect ((/\) <$> exists <*|> state) case _ of
-    true /\ Here -> pure unit
-    true /\ _ -> setState BeforeEnter
-    false /\ Gone -> pure unit
-    false /\ _ -> setState BeforeLeave
-
-  useEffect (animationFrame *|> state) case _ of
-    BeforeEnter -> setState Entering
-    AfterEnter -> setState Here
-    BeforeLeave -> setState Leaving
-    AfterLeave -> setState Gone
-    _ -> pure unit
-
-  useEffect (transitionend *|> state) case _ of
-    Entering -> setState Here
-    Leaving -> setState Gone
-    _ -> pure unit
-
-  let
-    klass = state <#> case _ of
-      BeforeEnter -> i klasses.here" "klasses.enterFrom
-      Entering    -> i klasses.here" "klasses.enterTo
-      AfterEnter  -> klasses.here
-      Here        -> klasses.here
-      BeforeLeave -> i klasses.here" "klasses.leaveFrom
-      Leaving     -> i klasses.here" "klasses.leaveTo
-      AfterLeave  -> klasses.gone
-      Gone        -> klasses.gone
-
-  f $ onTransitionend unit /\ klass
-
 makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
 makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) []
   where
@@ -347,10 +291,6 @@ vectorFromKey = case _ of
   "ArrowLeft" -> Just { x: -1, y: 0 }
   "ArrowRight" -> Just { x: 1, y: 0 }
   _ -> Nothing
-
-dedup :: forall a. Eq a => Event a -> Event a
-dedup event =
-  event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
 
 mousePoint :: WebEvent.Event -> Effect (Maybe Point)
 mousePoint ev = do
