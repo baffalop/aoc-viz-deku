@@ -68,12 +68,6 @@ initLength = 1
 maxLength :: Int
 maxLength = 30
 
-segmentWeightPx :: Number
-segmentWeightPx = 24.0
-
-segmentHalfWeightPx :: Number
-segmentHalfWeightPx = segmentWeightPx / 2.0
-
 descriptionPanel :: Proxy """
 <div class="w-56 space-y-3 row-span-full">
   <h1 class="font-bold text-4xl text-red-400 italic mb-6 tracking-wider">Rope/snake</h1>
@@ -160,23 +154,40 @@ main = runInBody Deku.do
   where
     buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
 
-switch :: String -> String -> Event Boolean -> (Boolean -> Effect Unit) -> Nut
-switch name label state setState =
-  D.div (klass_ controlsKlass)
-    [ D.label
-        Alt.do
-          D.For !:= name
-          klass_ labelKlass
-        [text_ label]
-    , D.input
-        Alt.do
-          D.Xtype !:= "checkbox"
-          D.Name !:= name
-          D.Checked <:=> show <$> state
-          click $ setState <<< not <$> state
-          klass_ "switch"
-        []
-    ]
+makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
+makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) []
+  where
+    unfold i head rope
+      | i > maxLength = f rope
+      | otherwise = Deku.do
+        let
+          canGrow :: Event Boolean
+          canGrow = ado
+            growModeOn <- grow
+            len <- length
+            in growModeOn && i > len
+
+          headMovedFrom :: Event Point
+          headMovedFrom = withLast head # filterMap case _ of
+            { last: Just (Just last), now: Just now } | last /= now -> Just last
+            _ -> Nothing
+
+          growth :: Event Point
+          growth = gate canGrow headMovedFrom
+
+          leader :: Event (Maybe Point)
+          leader = ado
+            len <- length
+            head' <- compact head
+            growth' <- Just <$> growth <|> Nothing <$ filter not canGrow
+            in maybeIf (i <= len) head' <|> growth'
+
+        useEffect growth $ const incLength
+
+        tail <- useMemoized $ dedup $ fold maybeFollow Nothing leader
+        segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
+
+        unfold (i + 1) tail $ Array.snoc rope segment
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment = Deku.do
@@ -229,6 +240,30 @@ ropeSegment klasses segment = Deku.do
       { x: -1.0, y: 0.0 } -> 0.5
       d -> (d.x - 2.0) * (-0.125) * signum d.y
 
+segmentWeightPx :: Number
+segmentWeightPx = 24.0
+
+segmentHalfWeightPx :: Number
+segmentHalfWeightPx = segmentWeightPx / 2.0
+
+switch :: String -> String -> Event Boolean -> (Boolean -> Effect Unit) -> Nut
+switch name label state setState =
+  D.div (klass_ controlsKlass)
+    [ D.label
+        Alt.do
+          D.For !:= name
+          klass_ labelKlass
+        [text_ label]
+    , D.input
+        Alt.do
+          D.Xtype !:= "checkbox"
+          D.Name !:= name
+          D.Checked <:=> show <$> state
+          click $ setState <<< not <$> state
+          klass_ "switch"
+        []
+    ]
+
 labelKlass :: String
 labelKlass = "font-bold italic text-slate-300 block"
 
@@ -237,41 +272,6 @@ controlsKlass = containerKlass <> " max-w-max space-y-2.5"
 
 containerKlass :: String
 containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
-
-makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
-makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) []
-  where
-    unfold i head rope
-      | i > maxLength = f rope
-      | otherwise = Deku.do
-        let
-          canGrow :: Event Boolean
-          canGrow = ado
-            growModeOn <- grow
-            len <- length
-            in growModeOn && i > len
-
-          headMovedFrom :: Event Point
-          headMovedFrom = withLast head # filterMap case _ of
-            { last: Just (Just last), now: Just now } | last /= now -> Just last
-            _ -> Nothing
-
-          growth :: Event Point
-          growth = gate canGrow headMovedFrom
-
-          leader :: Event (Maybe Point)
-          leader = ado
-            len <- length
-            head' <- compact head
-            growth' <- Just <$> growth <|> Nothing <$ filter not canGrow
-            in maybeIf (i <= len) head' <|> growth'
-
-        useEffect growth $ const incLength
-
-        tail <- useMemoized $ dedup $ fold maybeFollow Nothing leader
-        segment <- useMemoized $ lift2 { head: _, tail: _ } <$> head <*> tail
-
-        unfold (i + 1) tail $ Array.snoc rope segment
 
 maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
 maybeFollow tailM headM = do
