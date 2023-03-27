@@ -8,11 +8,11 @@ import Prelude hiding (add)
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
 import Control.Apply (lift2)
-import Data.Array ((:))
+import Data.Array (snoc, zipWith, (:))
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
-import Data.Int (toNumber, trunc)
+import Data.Int (rem, toNumber, trunc)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (abs, sqrt, floor, ceil)
@@ -141,7 +141,7 @@ main = runInBody Deku.do
         Alt.do
           klass_ $ containerKlass <> " flex-1 relative cursor-pointer"
           click_ $ cb $ setTarget <=< mousePoint
-        $ targetEl : (rope <#> ropeSegment "border-red-400 bg-red-500/40")
+        $ targetEl : (zipWith ropeSegment (cycleTo maxLength rainbow) rope)
     ]
   where
     buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
@@ -350,3 +350,24 @@ mousePoint ev = do
       { x: toNumber (Mouse.offsetX mouseEvent) - (rect.width / 2.0)
       , y: toNumber (Mouse.offsetY mouseEvent) - (rect.height / 2.0)
       }
+
+cycleTo :: forall a. Int -> Array a -> Array a
+cycleTo length ar =
+  join $ Array.replicate count ar `snoc` Array.take leftover ar
+  where
+    alen = Array.length ar
+    count = length / (alen - 1)
+    leftover = length `rem` alen
+
+rainbow :: Array String
+rainbow =
+  [ "border-red-400 bg-red-500/40"
+  , "border-pink-400 bg-pink-500/40"
+  , "border-purple-400 bg-purple-500/40"
+  , "border-indigo-400 bg-indigo-500/40"
+  , "border-sky-400 bg-sky-500/40"
+  , "border-teal-400 bg-teal-500/40"
+  , "border-green-400 bg-green-500/40"
+  , "border-yellow-400 bg-yellow-500/40"
+  , "border-orange-400 bg-orange-500/40"
+  ]
