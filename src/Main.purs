@@ -95,6 +95,7 @@ main = runInBody Deku.do
   useEffect (filter (_ == "KeyA") Key.down) $ const incLength
   useEffect (filter (_ == "KeyS") Key.down) $ const decLength
   useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
+  useEffect (filter (_ == "KeyM") Key.down *|> motor) $ setMotor <<< not
 
   let
     keyControl :: Event Point
