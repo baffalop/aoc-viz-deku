@@ -17,6 +17,7 @@ import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (abs, sqrt, floor, ceil)
 import Data.Ord (signum)
+import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
@@ -38,7 +39,9 @@ import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
-import Web.Event.Event (stopPropagation)
+import Web.DOM.Element (getBoundingClientRect)
+import Web.DOM.Element as Element
+import Web.Event.Event (currentTarget, stopPropagation)
 import Web.Event.Event as WebEvent
 import Web.HTML (window)
 import Web.UIEvent.MouseEvent (fromEvent) as Mouse
@@ -58,8 +61,11 @@ initLength = 1
 maxLength :: Int
 maxLength = 30
 
-segmentWeightPx :: Int
-segmentWeightPx = 24
+segmentWeightPx :: Number
+segmentWeightPx = 24.0
+
+segmentHalfWeightPx :: Number
+segmentHalfWeightPx = segmentWeightPx / 2.0
 
 descriptionPanel :: Proxy """
 <div class="w-56 space-y-3 row-span-full">
@@ -134,7 +140,7 @@ main = runInBody Deku.do
     , D.div
         Alt.do
           klass_ $ containerKlass <> " flex-1 relative cursor-pointer"
-          click_ $ cb $ setTarget <<< map pointFromPx <=< mouseOffsetCoordsCssPx
+          click_ $ cb $ setTarget <=< mousePoint
         $ targetEl : (rope <#> ropeSegment "border-red-400 bg-red-500/40")
     ]
   where
@@ -164,8 +170,8 @@ ropeSegment klasses segment = Deku.do
         turns <- turnsState
         let
           { dx, dy } = delta tail head
-          width = (sqrt (dx * dx + dy * dy) + 1.0) * toNumber segmentWeightPx
-          halfWeightPctWidth = (toNumber halfWeight / width) * 100.0
+          width = (sqrt (dx * dx + dy * dy) + 1.0) * segmentWeightPx
+          halfWeightPctWidth = (segmentHalfWeightPx / width) * 100.0
         in
         i "width: "width"px; \
           \height: "segmentWeightPx"px; \
@@ -174,14 +180,12 @@ ropeSegment klasses segment = Deku.do
           \transform: \
             \translate(-"halfWeightPctWidth"%, -50%) \
             \rotate("turns"turn); \
-          \transform-origin: "halfWeight"px "halfWeight"px;"
+          \transform-origin: "segmentHalfWeightPx"px "segmentHalfWeightPx"px;"
 
     []
   where
-    halfWeight = segmentWeightPx / 2
-
-    offset :: Int -> Int
-    offset v = (v * segmentWeightPx) - halfWeight
+    offset :: Int -> Number
+    offset v = (toNumber v * segmentWeightPx) - segmentHalfWeightPx
 
     segment' :: Event Segment
     segment' = compact segment
@@ -312,9 +316,6 @@ delta from to = hmap toNumber
   , dy: to.y - from.y
   }
 
-pointFromPx :: Point -> Point
-pointFromPx = hmap (_ / segmentWeightPx)
-
 closest :: Number -> Number -> Number -> Number
 closest to x y = case compare dx dy of
   LT -> x
@@ -338,12 +339,14 @@ dedup :: forall a. Eq a => Event a -> Event a
 dedup event =
   event <|* filter (\{ last, now } -> Just now /= last) (withLast event)
 
-mouseOffsetCoordsCssPx :: WebEvent.Event -> Effect (Maybe Point)
-mouseOffsetCoordsCssPx ev = do
+mousePoint :: WebEvent.Event -> Effect (Maybe Point)
+mousePoint ev = do
   pixelRatio <- window >>= devicePixelRatio
+  maybeRect <- traverse getBoundingClientRect $ Element.fromEventTarget =<< currentTarget ev
   pure do
-    e <- Mouse.fromEvent ev
-    pure $ hmap (toNumber >>> (_ / pixelRatio) >>> trunc)
-      { x: Mouse.offsetX e
-      , y: Mouse.offsetY e
+    mouseEvent <- Mouse.fromEvent ev
+    rect <- maybeRect
+    pure $ hmap (trunc <<< (_ / (pixelRatio * segmentHalfWeightPx)))
+      { x: toNumber (Mouse.offsetX mouseEvent) - (rect.width / 2.0)
+      , y: toNumber (Mouse.offsetY mouseEvent) - (rect.height / 2.0)
       }
