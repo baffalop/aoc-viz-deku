@@ -245,11 +245,11 @@ segmentHalfWeightPx = segmentWeightPx / 2.0
 
 controlPanel :: forall lock payload. String -> String -> Domable lock payload -> Domable lock payload
 controlPanel name label contents =
-  D.div (klass_ controlsKlass)
+  D.div (klass_ $ containerKlass <> " max-w-max space-y-2.5")
     [ D.label
         Alt.do
           D.For !:= name
-          klass_ labelKlass
+          klass_ "font-bold italic text-slate-300 block"
         [text_ label]
     , contents
     ]
@@ -264,12 +264,6 @@ switch name (setState /\ state) =
       click $ setState <<< not <$> state
       klass_ "switch"
     []
-
-labelKlass :: String
-labelKlass = "font-bold italic text-slate-300 block"
-
-controlsKlass :: String
-controlsKlass = containerKlass <> " max-w-max space-y-2.5"
 
 containerKlass :: String
 containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
