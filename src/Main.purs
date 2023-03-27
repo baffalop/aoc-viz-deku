@@ -52,8 +52,12 @@ import Web.HTML (window)
 import Web.UIEvent.MouseEvent (fromEvent) as Mouse
 
 type Point = { x :: Int, y :: Int }
-type Vec = { dx :: Number, dy :: Number }
+type Delta = { dx :: Number, dy :: Number }
 type Segment = { head :: Point, tail :: Point }
+
+data Motion
+  = Vector Point
+  | Target Point
 
 origin :: Point
 origin = { x: 0, y: 0 }
@@ -100,13 +104,17 @@ main = runInBody Deku.do
   useEffect (filter (_ == "KeyM") Key.down *|> motor) $ setMotor <<< not
 
   let
-    keyControl :: Event Point
+    clock :: Event Unit
+    clock = unit <$ interval 200
+
+    keyControl :: Event Motion
     keyControl = filterMap vectorFromKey Key.down
 
     head :: Event Point
-    head = pure origin <|> fold add origin Alt.do
+    head = pure origin <|> fold applyMotion origin Alt.do
       keyControl
-      keyControl <|* gate motor (interval 200)
+      gate motor clock *|> keyControl
+      gate (isJust <$> target) clock *|> (Target <$> compact target)
 
     targetEl :: Nut
     targetEl = ropeSegment "border-yellow-500 bg-yellow-500/40" $ target <#> map \t -> { head: t, tail: t }
@@ -274,20 +282,25 @@ follow follower target = do
   where
      { dx, dy } = delta follower target
 
+applyMotion :: Point -> Motion -> Point
+applyMotion point (Vector v) = add point v
+applyMotion point (Target t) = hmap (trunc <<< signum) { x: dx, y: dy }
+  where { dx, dy } = delta point t
+
 add :: Point -> Point -> Point
 add p1 p2 =
   { x: p1.x + p2.x
   , y: p1.y + p2.y
   }
 
-delta :: Point -> Point -> Vec
+delta :: Point -> Point -> Delta
 delta from to = hmap toNumber
   { dx: to.x - from.x
   , dy: to.y - from.y
   }
 
-vectorFromKey :: String -> Maybe Point
-vectorFromKey = case _ of
+vectorFromKey :: String -> Maybe Motion
+vectorFromKey = map Vector <<< case _ of
   "ArrowUp" -> Just { x: 0, y: -1 }
   "ArrowDown" -> Just { x: 0, y: 1 }
   "ArrowLeft" -> Just { x: -1, y: 0 }
