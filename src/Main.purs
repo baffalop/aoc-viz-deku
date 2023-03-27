@@ -83,6 +83,7 @@ main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
   setGrowMode /\ grow <- useState true
+  setMotor /\ motor <- useState true
   setTarget /\ target <- useState (Nothing :: Maybe Point)
 
   inc /\ lengthInc'd <- useState'
@@ -100,7 +101,9 @@ main = runInBody Deku.do
     keyControl = filterMap vectorFromKey Key.down
 
     head :: Event Point
-    head = pure origin <|> fold add origin (keyControl <|> interval 200 *|> keyControl)
+    head = pure origin <|> fold add origin Alt.do
+      keyControl
+      keyControl <|* gate motor (interval 200)
 
     targetEl :: Nut
     targetEl = ropeSegment "border-yellow-500 bg-yellow-500/40" $ target <#> map \t -> { head: t, tail: t }
@@ -129,17 +132,8 @@ main = runInBody Deku.do
                 , D.span (klass_ "w-4") [text $ show <$> length]
                 ]
             ]
-        , D.div (klass_ controlsKlass)
-            [ D.label (D.For !:= "grow" <|> klass_ labelKlass) [text_ "Grow as I move"]
-            , D.input
-                Alt.do
-                  D.Xtype !:= "checkbox"
-                  D.Name !:= "grow"
-                  D.Checked <:=> show <$> grow
-                  click $ setGrowMode <<< not <$> grow
-                  klass_ "switch"
-                []
-            ]
+        , switch "grow" "Grow as I move" grow setGrowMode
+        , switch "motor" "Motor" motor setMotor
         ]
     , D.div
         Alt.do
@@ -149,9 +143,24 @@ main = runInBody Deku.do
     ]
   where
     buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
-    containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
-    controlsKlass = containerKlass <> " max-w-max space-y-2.5"
-    labelKlass = "font-bold italic text-slate-300 block"
+
+switch :: String -> String -> Event Boolean -> (Boolean -> Effect Unit) -> Nut
+switch name label state setState =
+  D.div (klass_ controlsKlass)
+    [ D.label
+        Alt.do
+          D.For !:= name
+          klass_ labelKlass
+        [text_ label]
+    , D.input
+        Alt.do
+          D.Xtype !:= "checkbox"
+          D.Name !:= name
+          D.Checked <:=> show <$> state
+          click $ setState <<< not <$> state
+          klass_ "switch"
+        []
+    ]
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment = Deku.do
@@ -203,6 +212,15 @@ ropeSegment klasses segment = Deku.do
     turnsIn { head, tail } = case delta tail head of
       { dx: -1.0, dy: 0.0 } -> 0.5
       { dx, dy } -> (dx - 2.0) * (-0.125) * signum dy
+
+labelKlass :: String
+labelKlass = "font-bold italic text-slate-300 block"
+
+controlsKlass :: String
+controlsKlass = containerKlass <> " max-w-max space-y-2.5"
+
+containerKlass :: String
+containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
 
 type TransitionKlasses =
   { here :: String
