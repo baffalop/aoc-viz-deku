@@ -24,7 +24,7 @@ import Data.Tuple.Nested ((/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
-import Deku.Core (Nut)
+import Deku.Core (Domable(..), Nut)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useEffect, useMemoized, useState, useState')
@@ -124,26 +124,23 @@ main = runInBody Deku.do
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
     [ descriptionPanel ~~ {}
     , D.div (klass_ "flex gap-6 justify-start items-stretch")
-        [ D.div (klass_ controlsKlass)
-            [ D.label (D.For !:= "length" <|> klass_ labelKlass) [text_ "Length"]
-            , D.div (klass_ "flex gap-4 items-center")
-                [ D.button (klass_ buttonKlass <|> click_ decLength) [text_ "-1"]
-                , D.input
-                    Alt.do
-                      slider_ $ setLength <<< trunc
-                      D.Name !:= "length"
-                      D.OnKeydown !:= cb stopPropagation
-                      D.Value <:=> show <$> length
-                      D.Step !:= "1"
-                      D.Min !:= "1"
-                      D.Max !:= show maxLength
-                  []
-                , D.button (klass_ buttonKlass <|> click_ incLength) [text_ "+1"]
-                , D.span (klass_ "w-4") [text $ show <$> length]
-                ]
+        [ controlPanel "length" "Length"
+            [ D.button (klass_ buttonKlass <|> click_ decLength) [text_ "-1"]
+            , D.input
+                Alt.do
+                  slider_ $ setLength <<< trunc
+                  D.Name !:= "length"
+                  D.OnKeydown !:= cb stopPropagation
+                  D.Value <:=> show <$> length
+                  D.Step !:= "1"
+                  D.Min !:= "1"
+                  D.Max !:= show maxLength
+              []
+            , D.button (klass_ buttonKlass <|> click_ incLength) [text_ "+1"]
+            , D.span (klass_ "w-4") [text $ show <$> length]
             ]
-        , switch "grow" "Grow as I move" grow setGrowMode
-        , switch "motor" "Motor" motor setMotor
+        , controlPanel "grow" "Grow as I move" [switch "grow" grow setGrowMode]
+        , controlPanel "motor" "Motor" [switch "motor" motor setMotor]
         ]
     , D.div
         Alt.do
@@ -246,23 +243,27 @@ segmentWeightPx = 24.0
 segmentHalfWeightPx :: Number
 segmentHalfWeightPx = segmentWeightPx / 2.0
 
-switch :: String -> String -> Event Boolean -> (Boolean -> Effect Unit) -> Nut
-switch name label state setState =
+controlPanel :: forall lock payload. String -> String -> Array (Domable lock payload) -> Domable lock payload
+controlPanel name label contents =
   D.div (klass_ controlsKlass)
     [ D.label
         Alt.do
           D.For !:= name
           klass_ labelKlass
         [text_ label]
-    , D.input
-        Alt.do
-          D.Xtype !:= "checkbox"
-          D.Name !:= name
-          D.Checked <:=> show <$> state
-          click $ setState <<< not <$> state
-          klass_ "switch"
-        []
+    , D.div (klass_ "flex gap-4 items-center") contents
     ]
+
+switch :: String -> Event Boolean -> (Boolean -> Effect Unit) -> Nut
+switch name state setState =
+  D.input
+    Alt.do
+      D.Xtype !:= "checkbox"
+      D.Name !:= name
+      D.Checked <:=> show <$> state
+      click $ setState <<< not <$> state
+      klass_ "switch"
+    []
 
 labelKlass :: String
 labelKlass = "font-bold italic text-slate-300 block"
