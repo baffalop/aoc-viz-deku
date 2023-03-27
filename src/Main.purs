@@ -13,9 +13,11 @@ import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
 import Data.Int (toNumber, trunc)
+import Data.Int as Int
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.Number (abs, sqrt, floor, ceil)
+import Data.Number (abs, sqrt, floor)
+import Data.Number as Number
 import Data.Ord (signum)
 import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\))
@@ -206,7 +208,7 @@ ropeSegment klasses segment = Deku.do
 
     turnsState :: Event Number
     turnsState =
-      fold (\last cur -> closest last (floor last + cur) (ceil last + cur)) 0.0
+      fold (\last cur -> closest last (floor last + cur) (Number.ceil last + cur)) 0.0
         $ turnsIn <$> segment'
 
     turnsIn :: Segment -> Number
@@ -299,7 +301,7 @@ mousePoint ev = do
   pure do
     mouseEvent <- Mouse.fromEvent ev
     rect <- maybeRect
-    pure $ hmap (trunc <<< (_ / (pixelRatio * segmentHalfWeightPx)))
+    pure $ hmap (Int.ceil <<< (_ / (pixelRatio * segmentHalfWeightPx)))
       { x: toNumber (Mouse.offsetX mouseEvent) - (rect.width / 2.0)
       , y: toNumber (Mouse.offsetY mouseEvent) - (rect.height / 2.0)
       }
