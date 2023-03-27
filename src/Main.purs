@@ -34,6 +34,7 @@ import FRP.Event (Event, fold, gate, withLast)
 import FRP.Event.AnimationFrame (animationFrame)
 import FRP.Event.Class ((*|>), (<*|>), (<|*))
 import FRP.Event.Keyboard as Key
+import FRP.Event.Time (interval)
 import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
@@ -95,8 +96,11 @@ main = runInBody Deku.do
   useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
 
   let
+    keyControl :: Event Point
+    keyControl = filterMap vectorFromKey Key.down
+
     head :: Event Point
-    head = pure origin <|> fold add origin (filterMap vectorFromKey Key.down)
+    head = pure origin <|> fold add origin (keyControl <|> interval 200 *|> keyControl)
 
     targetEl :: Nut
     targetEl = ropeSegment "border-yellow-500 bg-yellow-500/40" $ target <#> map \t -> { head: t, tail: t }
