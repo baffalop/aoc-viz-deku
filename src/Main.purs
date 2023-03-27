@@ -15,7 +15,7 @@ import Data.Filterable (filter, filterMap)
 import Data.Int (toNumber, trunc)
 import Data.Int as Int
 import Data.Interpolate (i)
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
 import Data.Number (abs, sqrt, floor)
 import Data.Number as Number
 import Data.Ord (signum)
@@ -113,7 +113,7 @@ main = runInBody Deku.do
     head :: Event Point
     head = pure origin <|> fold applyMotion origin Alt.do
       keyControl
-      gate motor clock *|> keyControl
+      gate ((&&) <$> motor <*> (isNothing <$> target)) clock *|> keyControl
       gate (isJust <$> target) clock *|> (Target <$> compact target)
 
     targetEl :: Nut
@@ -123,6 +123,8 @@ main = runInBody Deku.do
 
   -- clear target on reaching it
   useEffect (delay 1 $ filter identity $ ((==) <<< Just) <$> head <*> target) $ const $ setTarget Nothing
+  -- clear target when arrow key is pressed
+  useEffect keyControl $ const $ setTarget Nothing
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
