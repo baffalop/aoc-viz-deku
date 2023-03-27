@@ -33,7 +33,7 @@ import Deku.Pursx ((~~))
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
 import FRP.Event (Event, fold, gate, withLast)
-import FRP.Event.Class ((*|>), (<|*))
+import FRP.Event.Class ((*|>))
 import FRP.Event.Keyboard as Key
 import FRP.Event.Time (interval)
 import Heterogeneous.Mapping (hmap)
@@ -52,7 +52,7 @@ import Web.HTML (window)
 import Web.UIEvent.MouseEvent (fromEvent) as Mouse
 
 type Point = { x :: Int, y :: Int }
-type Delta = { dx :: Number, dy :: Number }
+type Delta = { x :: Number, y :: Number }
 type Segment = { head :: Point, tail :: Point }
 
 data Motion
@@ -193,8 +193,8 @@ ropeSegment klasses segment = Deku.do
         { head, tail } <- segment'
         turns <- turnsState
         let
-          { dx, dy } = delta tail head
-          width = (sqrt (dx * dx + dy * dy) + 1.0) * segmentWeightPx
+          d = delta tail head
+          width = (sqrt (d.x * d.x + d.y * d.y) + 1.0) * segmentWeightPx
           halfWeightPctWidth = (segmentHalfWeightPx / width) * 100.0
         in
         i "width: "width"px; \
@@ -221,8 +221,8 @@ ropeSegment klasses segment = Deku.do
 
     turnsIn :: Segment -> Number
     turnsIn { head, tail } = case delta tail head of
-      { dx: -1.0, dy: 0.0 } -> 0.5
-      { dx, dy } -> (dx - 2.0) * (-0.125) * signum dy
+      { x: -1.0, y: 0.0 } -> 0.5
+      d -> (d.x - 2.0) * (-0.125) * signum d.y
 
 labelKlass :: String
 labelKlass = "font-bold italic text-slate-300 block"
@@ -277,15 +277,15 @@ maybeFollow tailM headM = do
 
 follow :: Point -> Point -> Maybe Point
 follow follower target = do
-  guard $ abs dx > 1.0 || abs dy > 1.0
-  pure $ add follower $ hmap (trunc <<< signum) { x: dx , y: dy }
+  guard $ abs d.x > 1.0 || abs d.y > 1.0
+  pure $ add follower $ hmap (trunc <<< signum) d
   where
-     { dx, dy } = delta follower target
+     d = delta follower target
 
 applyMotion :: Point -> Motion -> Point
-applyMotion point (Vector v) = add point v
-applyMotion point (Target t) = hmap (trunc <<< signum) { x: dx, y: dy }
-  where { dx, dy } = delta point t
+applyMotion point = add point <<< case _ of
+  Vector v -> v
+  Target t -> hmap (trunc <<< signum) $ delta point t
 
 add :: Point -> Point -> Point
 add p1 p2 =
@@ -295,8 +295,8 @@ add p1 p2 =
 
 delta :: Point -> Point -> Delta
 delta from to = hmap toNumber
-  { dx: to.x - from.x
-  , dy: to.y - from.y
+  { x: to.x - from.x
+  , y: to.y - from.y
   }
 
 vectorFromKey :: String -> Maybe Motion
