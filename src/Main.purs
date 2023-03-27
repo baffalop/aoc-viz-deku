@@ -20,7 +20,7 @@ import Data.Number (abs, sqrt, floor)
 import Data.Number as Number
 import Data.Ord (signum)
 import Data.Traversable (traverse)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
@@ -82,8 +82,8 @@ descriptionPanel = Proxy
 main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
-  setGrowMode /\ grow <- useState true
-  setMotor /\ motor <- useState true
+  growState@(setGrowMode /\ grow) <- useState true
+  motorState@(setMotor /\ motor) <- useState true
   setTarget /\ target <- useState (Nothing :: Maybe Point)
 
   inc /\ lengthInc'd <- useState'
@@ -139,8 +139,8 @@ main = runInBody Deku.do
             , D.button (klass_ buttonKlass <|> click_ incLength) [text_ "+1"]
             , D.span (klass_ "w-4") [text $ show <$> length]
             ]
-        , controlPanel "grow" "Grow as I move" [switch "grow" grow setGrowMode]
-        , controlPanel "motor" "Motor" [switch "motor" motor setMotor]
+        , controlPanel "grow" "Grow as I move" [switch "grow" growState]
+        , controlPanel "motor" "Motor" [switch "motor" motorState]
         ]
     , D.div
         Alt.do
@@ -254,8 +254,8 @@ controlPanel name label contents =
     , D.div (klass_ "flex gap-4 items-center") contents
     ]
 
-switch :: String -> Event Boolean -> (Boolean -> Effect Unit) -> Nut
-switch name state setState =
+switch :: String -> (Boolean -> Effect Unit) /\ Event Boolean -> Nut
+switch name (setState /\ state) =
   D.input
     Alt.do
       D.Xtype !:= "checkbox"
