@@ -124,7 +124,7 @@ main = runInBody Deku.do
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
     [ descriptionPanel ~~ {}
     , D.div (klass_ "flex gap-6 justify-start items-stretch")
-        [ controlPanel "length" "Length"
+        [ controlPanel "length" "Length" $ D.div (klass_ "flex gap-4 items-center")
             [ D.button (klass_ buttonKlass <|> click_ decLength) [text_ "-1"]
             , D.input
                 Alt.do
@@ -139,8 +139,8 @@ main = runInBody Deku.do
             , D.button (klass_ buttonKlass <|> click_ incLength) [text_ "+1"]
             , D.span (klass_ "w-4") [text $ show <$> length]
             ]
-        , controlPanel "grow" "Grow as I move" [switch "grow" growState]
-        , controlPanel "motor" "Motor" [switch "motor" motorState]
+        , controlPanel "grow" "Grow as I move" $ switch "grow" growState
+        , controlPanel "motor" "Motor" $ switch "motor" motorState
         ]
     , D.div
         Alt.do
@@ -243,7 +243,7 @@ segmentWeightPx = 24.0
 segmentHalfWeightPx :: Number
 segmentHalfWeightPx = segmentWeightPx / 2.0
 
-controlPanel :: forall lock payload. String -> String -> Array (Domable lock payload) -> Domable lock payload
+controlPanel :: forall lock payload. String -> String -> Domable lock payload -> Domable lock payload
 controlPanel name label contents =
   D.div (klass_ controlsKlass)
     [ D.label
@@ -251,7 +251,7 @@ controlPanel name label contents =
           D.For !:= name
           klass_ labelKlass
         [text_ label]
-    , D.div (klass_ "flex gap-4 items-center") contents
+    , contents
     ]
 
 switch :: String -> (Boolean -> Effect Unit) /\ Event Boolean -> Nut
