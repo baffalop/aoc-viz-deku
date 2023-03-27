@@ -24,7 +24,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
-import Deku.Core (Domable(..), Nut)
+import Deku.Core (Domable, Nut)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useEffect, useMemoized, useState, useState')
