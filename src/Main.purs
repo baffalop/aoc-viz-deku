@@ -33,6 +33,7 @@ import FRP.Event (Event, fold, gate, withLast)
 import FRP.Event.AnimationFrame (animationFrame)
 import FRP.Event.Class ((*|>), (<*|>), (<|*))
 import FRP.Event.Keyboard as Key
+import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
@@ -295,10 +296,7 @@ maybeFollow tailM headM = do
 follow :: Point -> Point -> Maybe Point
 follow follower target = do
   guard $ abs dx > 1.0 || abs dy > 1.0
-  pure $ follower `add`
-    { x: trunc $ signum dx
-    , y: trunc $ signum dy
-    }
+  pure $ add follower $ hmap (trunc <<< signum) { x: dx , y: dy }
   where
      { dx, dy } = delta follower target
 
@@ -309,16 +307,13 @@ add p1 p2 =
   }
 
 delta :: Point -> Point -> Vec
-delta from to =
-  { dx: toNumber $ to.x - from.x
-  , dy: toNumber $ to.y - from.y
+delta from to = hmap toNumber
+  { dx: to.x - from.x
+  , dy: to.y - from.y
   }
 
-mapBoth :: forall a b. (a -> b) -> { x :: a, y :: a } -> { x :: b, y :: b }
-mapBoth f { x, y } = { x: f x, y: f y }
-
 pointFromPx :: Point -> Point
-pointFromPx = mapBoth (_ / segmentWeightPx)
+pointFromPx = hmap (_ / segmentWeightPx)
 
 closest :: Number -> Number -> Number -> Number
 closest to x y = case compare dx dy of
@@ -348,7 +343,7 @@ mouseOffsetCoordsCssPx ev = do
   pixelRatio <- window >>= devicePixelRatio
   pure do
     e <- Mouse.fromEvent ev
-    pure $ mapBoth (toNumber >>> (_ / pixelRatio) >>> trunc)
+    pure $ hmap (toNumber >>> (_ / pixelRatio) >>> trunc)
       { x: Mouse.offsetX e
       , y: Mouse.offsetY e
       }

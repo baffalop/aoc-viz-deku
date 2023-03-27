@@ -8,6 +8,7 @@
   , "effect"
   , "filterable"
   , "foldable-traversable"
+  , "heterogeneous"
   , "hyrule"
   , "integers"
   , "interpolate"
