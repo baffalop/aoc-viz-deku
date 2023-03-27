@@ -20,6 +20,7 @@
   , "tuples"
   , "web-cssom"
   , "web-cssom-view"
+  , "web-dom"
   , "web-events"
   , "web-html"
   , "web-uievents"
