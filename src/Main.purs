@@ -105,7 +105,7 @@ main = runInBody Deku.do
 
   let
     clock :: Event Unit
-    clock = unit <$ interval 200
+    clock = unit <$ interval 100
 
     keyControl :: Event Motion
     keyControl = filterMap vectorFromKey Key.down
