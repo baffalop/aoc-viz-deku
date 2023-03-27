@@ -17,3 +17,4 @@ packages.json
 /test/output/
 /dist
 /.idea/
+.DS_Store
