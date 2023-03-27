@@ -32,7 +32,7 @@ import Deku.Listeners (click, click_, slider_)
 import Deku.Pursx ((~~))
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
-import FRP.Event (Event, fold, gate, withLast)
+import FRP.Event (Event, delay, fold, gate, withLast)
 import FRP.Event.Class ((*|>))
 import FRP.Event.Keyboard as Key
 import FRP.Event.Time (interval)
@@ -120,6 +120,9 @@ main = runInBody Deku.do
     targetEl = ropeSegment "border-yellow-500 bg-yellow-500/40" $ target <#> map \t -> { head: t, tail: t }
 
   rope :: Array (Event (Maybe Segment)) <- makeRope head length grow incLength
+
+  -- clear target on reaching it
+  useEffect (delay 1 $ filter identity $ ((==) <<< Just) <$> head <*> target) $ const $ setTarget Nothing
 
   D.div
     (klass_ "bg-slate-800 text-slate-100 p-8 h-screen grid gap-8 grid-rows-[auto_1fr] grid-cols-[auto_1fr]")
