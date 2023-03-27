@@ -8,11 +8,11 @@ import Prelude hiding (add)
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
 import Control.Apply (lift2)
-import Data.Array (snoc, zipWith, (:))
+import Data.Array (zipWith, (:))
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
-import Data.Int (rem, toNumber, trunc)
+import Data.Int (toNumber, trunc)
 import Data.Interpolate (i)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (abs, sqrt, floor, ceil)
@@ -38,6 +38,7 @@ import FRP.Event.Time (interval)
 import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
+import Utils.Basics (maybeIf, closest, cycleTo)
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
 import Web.DOM.Element (getBoundingClientRect)
@@ -339,17 +340,6 @@ delta from to = hmap toNumber
   , dy: to.y - from.y
   }
 
-closest :: Number -> Number -> Number -> Number
-closest to x y = case compare dx dy of
-  LT -> x
-  GT -> y
-  EQ -> if abs x < abs y then x else y
-  where
-    (dx /\ dy) = abs (to - x) /\ abs (to - y)
-
-maybeIf :: forall a. Boolean -> a -> Maybe a
-maybeIf = if _ then Just else const Nothing
-
 vectorFromKey :: String -> Maybe Point
 vectorFromKey = case _ of
   "ArrowUp" -> Just { x: 0, y: -1 }
@@ -373,14 +363,6 @@ mousePoint ev = do
       { x: toNumber (Mouse.offsetX mouseEvent) - (rect.width / 2.0)
       , y: toNumber (Mouse.offsetY mouseEvent) - (rect.height / 2.0)
       }
-
-cycleTo :: forall a. Int -> Array a -> Array a
-cycleTo length ar =
-  join $ Array.replicate count ar `snoc` Array.take leftover ar
-  where
-    alen = Array.length ar
-    count = length / (alen - 1)
-    leftover = length `rem` alen
 
 rainbow :: Array String
 rainbow =
