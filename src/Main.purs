@@ -266,7 +266,7 @@ switch name (setState /\ state) =
     []
 
 containerKlass :: String
-containerKlass = "p-4 pt-2 bg-slate-700 rounded-lg border-2 border-slate-600"
+containerKlass = "px-4 pt-2 pb-3 bg-slate-700 rounded-lg border-2 border-slate-600"
 
 maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
 maybeFollow tailM headM = do
