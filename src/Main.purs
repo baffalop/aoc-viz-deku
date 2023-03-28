@@ -107,8 +107,8 @@ main = runInBody Deku.do
     head :: Event Point
     head = pure origin <|> fold applyMotion origin Alt.do
       keyControl
-      gate ((&&) <$> motor <*> (isNothing <$> target)) clock *|> keyControl
-      gate (isJust <$> target) clock *|> (Target <$> compact target)
+      gate ((&&) <$> motor <*> (target <#> isNothing)) clock *|> keyControl
+      gate (target <#> isJust) clock *|> (Target <$> compact target)
 
     targetEl :: Nut
     targetEl = ropeSegment "border-yellow-500 bg-yellow-500/40" $ target <#> map \t -> { head: t, tail: t }
