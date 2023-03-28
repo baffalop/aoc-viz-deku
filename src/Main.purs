@@ -83,7 +83,7 @@ main :: Effect Unit
 main = runInBody Deku.do
   setLength /\ length <- useState initLength
   growState@(setGrowMode /\ grow) <- useState true
-  motorState@(setMotor /\ motor) <- useState true
+  motorState@(setMotor /\ motor) <- useState false
   setTarget /\ target <- useState (Nothing :: Maybe Point)
 
   inc /\ lengthInc'd <- useState'
