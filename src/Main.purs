@@ -200,7 +200,9 @@ ropeSegment klasses segment = Deku.do
   D.div
     Alt.do
       D.OnTransitionend !:= transitionend
-      klass $ transitionKlass <#> i klasses" rounded-full border transition-all duration-200 left-1/2 top-1/2 "
+      klass
+        $ pure (klasses <> " rounded-full border transition-all duration-200 left-1/2 top-1/2 ")
+        <> transitionKlass
 
       style ado
         { head, tail } <- segment'
