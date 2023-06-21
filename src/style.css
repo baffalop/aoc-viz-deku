@@ -30,21 +30,11 @@ input[type=range] {
   @apply cursor-pointer appearance-none bg-transparent;
 }
 
-input[type=range]::-webkit-slider-thumb {
-  @apply range-thumb;
-}
+input[type=range]::-webkit-slider-thumb          { @apply range-thumb; }
+input[type=range]::-moz-range-thumb              { @apply range-thumb; }
 
-input[type=range]::-moz-range-thumb {
-  @apply range-thumb;
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-  @apply range-track;
-}
-
-input[type=range]::-moz-range-track {
-  @apply range-track;
-}
+input[type=range]::-webkit-slider-runnable-track { @apply range-track; }
+input[type=range]::-moz-range-track              { @apply range-track; }
 
 /* switch */
 
