@@ -86,7 +86,6 @@ main = runInBody Deku.do
   growState@(setGrowMode /\ grow) <- useState true
   motorState@(setMotor /\ motor) <- useState false
   setTarget /\ target <- useState (Nothing :: Maybe Point)
-  (togglePuzzleModal /\ setPuzzleModalOpen /\ puzzleModalOpen) <- useToggle false
 
   inc /\ lengthInc'd <- useState'
   dec /\ lengthDec'd <- useState'
@@ -143,14 +142,7 @@ main = runInBody Deku.do
             ]
         , controlPanel "grow" "Grow as I move" $ switch "grow" growState
         , controlPanel "motor" "Motor" $ switch "motor" motorState
-        , controlPanel "input" "Input" $ D.div (klass_ "relative")
-            [ D.button (klass_ buttonKlass <|> click_ togglePuzzleModal) [text_ "Add puzzle input"]
-            , DekuC.guard puzzleModalOpen
-                $ D.div
-                  Alt.do
-                    klass_ $ containerKlass <> " absolute right-0 top-full mt-2 z-10 w-96 h-52"
-                  []
-            ]
+        , puzzleInputModal
         ]
     , D.div
         Alt.do
@@ -158,8 +150,6 @@ main = runInBody Deku.do
           click_ $ cb $ setTarget <=< mousePoint
         $ targetEl : (zipWith ropeSegment (cycleTo maxLength rainbow) rope)
     ]
-  where
-    buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
 
 makeRope :: Event Point -> Event Int -> Event Boolean -> Effect Unit -> Hook (Array (Event (Maybe Segment)))
 makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) []
@@ -249,6 +239,19 @@ ropeSegment klasses segment = Deku.do
       { x: -1.0, y: 0.0 } -> 0.5
       d -> (d.x - 2.0) * (-0.125) * signum d.y
 
+puzzleInputModal :: Nut
+puzzleInputModal = Deku.do
+  (toggleOpen /\ setOpen /\ open) <- useToggle false
+
+  controlPanel "input" "Input" $ D.div (klass_ "relative")
+    [ D.button (klass_ buttonKlass <|> click_ toggleOpen) [text_ "Add puzzle input"]
+    , DekuC.guard open
+        $ D.div
+          Alt.do
+            klass_ $ containerKlass <> " absolute right-0 top-full mt-2 z-10 w-96 h-52"
+          []
+    ]
+
 segmentWeightPx :: Number
 segmentWeightPx = 24.0
 
@@ -279,6 +282,9 @@ switch name (setState /\ state) =
 
 containerKlass :: String
 containerKlass = "px-4 pt-2 pb-3 bg-slate-700 rounded-lg border-2 border-slate-600 min-w-max"
+
+buttonKlass :: String
+buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
 
 maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
 maybeFollow tailM headM = do
