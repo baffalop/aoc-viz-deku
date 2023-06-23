@@ -24,7 +24,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
-import Deku.Core (Domable, Nut)
+import Deku.Control as DekuC
+import Deku.Core (Domable, Nut, fixed)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useEffect, useMemoized, useState, useState')
@@ -92,6 +93,10 @@ main = runInBody Deku.do
   useEffect (lengthDec'd *|> length # filter (_ > 1))         $ setLength <<< (_ - 1)
   let incLength /\ decLength = inc unit /\ dec unit
 
+  setPuzzleModalOpen /\ puzzleModalOpen <- useState false
+  togglePuzzleModal /\ puzzleModalToggled <- useState'
+  useEffect (puzzleModalToggled *|> puzzleModalOpen) $ setPuzzleModalOpen <<< not
+
   useEffect (filter (_ == "KeyA") Key.down) $ const incLength
   useEffect (filter (_ == "KeyS") Key.down) $ const decLength
   useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
@@ -141,6 +146,14 @@ main = runInBody Deku.do
             ]
         , controlPanel "grow" "Grow as I move" $ switch "grow" growState
         , controlPanel "motor" "Motor" $ switch "motor" motorState
+        , controlPanel "input" "Input" $ D.div (klass_ "relative")
+            [ D.button (klass_ buttonKlass <|> click_ (togglePuzzleModal unit)) [text_ "Add puzzle input"]
+            , DekuC.guard puzzleModalOpen
+                $ D.div
+                  Alt.do
+                    klass_ $ containerKlass <> " absolute right-0 top-full mt-2 z-10 w-96 h-52"
+                  []
+            ]
         ]
     , D.div
         Alt.do
