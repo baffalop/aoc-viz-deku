@@ -41,7 +41,7 @@ import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Utils.Basics (maybeIf, closest, cycleTo)
-import Utils.Deku (Hook, transition)
+import Utils.Deku (Hook, transition, useToggle)
 import Utils.FRP (dedup)
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
@@ -86,16 +86,13 @@ main = runInBody Deku.do
   growState@(setGrowMode /\ grow) <- useState true
   motorState@(setMotor /\ motor) <- useState false
   setTarget /\ target <- useState (Nothing :: Maybe Point)
+  (togglePuzzleModal /\ setPuzzleModalOpen /\ puzzleModalOpen) <- useToggle false
 
   inc /\ lengthInc'd <- useState'
   dec /\ lengthDec'd <- useState'
   useEffect (lengthInc'd *|> length # filter (_ < maxLength)) $ setLength <<< (_ + 1)
   useEffect (lengthDec'd *|> length # filter (_ > 1))         $ setLength <<< (_ - 1)
   let incLength /\ decLength = inc unit /\ dec unit
-
-  setPuzzleModalOpen /\ puzzleModalOpen <- useState false
-  togglePuzzleModal /\ puzzleModalToggled <- useState'
-  useEffect (puzzleModalToggled *|> puzzleModalOpen) $ setPuzzleModalOpen <<< not
 
   useEffect (filter (_ == "KeyA") Key.down) $ const incLength
   useEffect (filter (_ == "KeyS") Key.down) $ const decLength
@@ -147,7 +144,7 @@ main = runInBody Deku.do
         , controlPanel "grow" "Grow as I move" $ switch "grow" growState
         , controlPanel "motor" "Motor" $ switch "motor" motorState
         , controlPanel "input" "Input" $ D.div (klass_ "relative")
-            [ D.button (klass_ buttonKlass <|> click_ (togglePuzzleModal unit)) [text_ "Add puzzle input"]
+            [ D.button (klass_ buttonKlass <|> click_ togglePuzzleModal) [text_ "Add puzzle input"]
             , DekuC.guard puzzleModalOpen
                 $ D.div
                   Alt.do

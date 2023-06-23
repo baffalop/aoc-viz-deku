@@ -1,6 +1,7 @@
 module Utils.Deku
   ( Hook
   , transition
+  , useToggle
   )
   where
 
@@ -72,3 +73,10 @@ transition exists klasses f = Deku.do
       Gone        -> klasses.gone
 
   f $ onTransitionend unit /\ klass
+
+useToggle :: Boolean -> Hook (Effect Unit /\ (Boolean -> Effect Unit) /\ Event Boolean)
+useToggle initial f = Deku.do
+  toggle /\ toggled <- useState'
+  setState /\ state <- useState initial
+  useEffect (toggled *|> state) $ setState <<< not
+  f $ toggle unit /\ setState /\ state
