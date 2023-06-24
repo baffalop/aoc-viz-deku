@@ -24,6 +24,7 @@ type TransitionKlasses =
   , gone :: String
   , enterFrom :: String
   , enterTo :: String
+  , entered :: String
   , leaveFrom :: String
   , leaveTo :: String
   }
@@ -65,8 +66,8 @@ transition exists klasses f = Deku.do
     klass = state <#> case _ of
       BeforeEnter -> i klasses.here" "klasses.enterFrom
       Entering    -> i klasses.here" "klasses.enterTo
-      AfterEnter  -> klasses.here
-      Here        -> klasses.here
+      AfterEnter  -> i klasses.here" "klasses.entered
+      Here        -> i klasses.here" "klasses.entered
       BeforeLeave -> i klasses.here" "klasses.leaveFrom
       Leaving     -> i klasses.here" "klasses.leaveTo
       AfterLeave  -> klasses.gone

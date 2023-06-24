@@ -193,6 +193,7 @@ ropeSegment klasses segment = Deku.do
     , here: "absolute"
     , enterFrom: "!w-0 !h-0"
     , enterTo: "w-6"
+    , entered: ""
     , leaveFrom: "w-6"
     , leaveTo: "!w-0 !h-0"
     }
@@ -242,23 +243,28 @@ ropeSegment klasses segment = Deku.do
 puzzleInputPanel :: Nut
 puzzleInputPanel = Deku.do
   (setOpen /\ open) <- useState false
+  transitionend /\ transitionKlass <- transition open
+    { gone: "inset-0"
+    , here: "right-0 top-0 shadow-xl"
+    , enterFrom: closedWidth
+    , enterTo: "w-96 h-72"
+    , entered: "w-96 h-72"
+    , leaveFrom: "w-96 h-72"
+    , leaveTo: closedWidth
+    }
 
-  D.div
-  (klass_ $ "relative space-y-2.5 " <> closedWidth)
-      [ D.div
-          (klass ado
-            dimensions <- open <#> if _
-              then "right-0 top-0 w-96 h-72 shadow-xl"
-              else "inset-0 " <> closedWidth
-            in i containerKlass" space-y-2.5 absolute z-10 transition-all duration-300 "dimensions
-          )
-          [ D.div (klass_ "flex justify-between")
-            [ controlLabel "puzzle-input" "Puzzle input"
-            , DekuC.guard open $ iconButton (setOpen false) "×"
-            ]
-          , DekuC.guard (not <$> open) $ textButton (setOpen true) "Add puzzle input"
+  D.div (klass_ $ "relative space-y-2.5 " <> closedWidth)
+    [ D.div
+        Alt.do
+          D.OnTransitionend !:= transitionend
+          klass $ i containerKlass" space-y-2.5 absolute z-10 transition-all duration-300 " <$> transitionKlass
+        [ D.div (klass_ "flex justify-between")
+          [ controlLabel "puzzle-input" "Puzzle input"
+          , DekuC.guard open $ iconButton (setOpen false) "×"
           ]
-      ]
+        , DekuC.guard (not <$> open) $ textButton (setOpen true) "Add puzzle input"
+        ]
+    ]
     where
       closedWidth = "w-44"
 
