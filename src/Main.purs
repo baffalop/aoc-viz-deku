@@ -259,7 +259,7 @@ puzzleInputPanel = Deku.do
         Alt.do
           D.OnTransitionend !:= transitionend
           klass $ i containerKlass" flex flex-col gap-y-2.5 absolute z-10 transition-all duration-300 " <$> transitionKlass
-        [ D.div (klass_ "flex justify-between")
+        [ D.div (klass_ "flex justify-between items-start")
           [ controlLabel "puzzle-input" "Puzzle input"
           , DekuC.guard open $ iconButton (setOpen false) "×"
           ]
@@ -310,7 +310,7 @@ textButton :: Effect Unit -> String -> Nut
 textButton = styledButton "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
 
 iconButton :: Effect Unit -> String -> Nut
-iconButton = styledButton "font-medium text-xl text-teal-400 hover:text-teal-300 cursor-pointer"
+iconButton = styledButton "text-2xl leading-none text-teal-400/75 hover:text-teal-400/100 cursor-pointer"
 
 styledButton :: String -> Effect Unit -> String -> Nut
 styledButton klass onClick label = D.button (klass_ klass <|> click_ onClick) [text_ label]
