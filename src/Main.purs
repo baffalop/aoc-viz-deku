@@ -41,7 +41,7 @@ import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Utils.Basics (maybeIf, closest, cycleTo)
-import Utils.Deku (Hook, transition, useToggle)
+import Utils.Deku (Hook, transition)
 import Utils.FRP (dedup)
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
@@ -241,7 +241,7 @@ ropeSegment klasses segment = Deku.do
 
 puzzleInputPanel :: Nut
 puzzleInputPanel = Deku.do
-  (toggleOpen /\ _ /\ open) <- useToggle false
+  (setOpen /\ open) <- useState false
 
   D.div
     (klass_ $ "relative space-y-2.5 " <> closedWidth)
@@ -254,7 +254,7 @@ puzzleInputPanel = Deku.do
         )
         [ controlLabel "puzzle-input" "Puzzle input"
         , DekuC.guard (not <$> open)
-          $ D.button (klass_ buttonKlass <|> click_ toggleOpen) [text_ "Add puzzle input"]
+          $ D.button (klass_ buttonKlass <|> click_ (setOpen true)) [text_ "Add puzzle input"]
         ]
     ]
   where
