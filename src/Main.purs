@@ -126,7 +126,7 @@ main = runInBody Deku.do
     [ descriptionPanel ~~ {}
     , D.div (klass_ "flex gap-6 justify-start items-stretch")
         [ controlPanel "length" "Length" $ D.div (klass_ "flex gap-4 items-center")
-            [ D.button (klass_ buttonKlass <|> click_ decLength) [text_ "-1"]
+            [ textButton decLength "-1"
             , D.input
                 Alt.do
                   slider_ $ setLength <<< trunc
@@ -137,7 +137,7 @@ main = runInBody Deku.do
                   D.Min !:= "1"
                   D.Max !:= show maxLength
               []
-            , D.button (klass_ buttonKlass <|> click_ incLength) [text_ "+1"]
+            , textButton incLength "+1"
             , D.span (klass_ "w-4") [text $ show <$> length]
             ]
         , controlPanel "grow" "Grow as I move" $ switch "grow" growState
@@ -243,14 +243,6 @@ puzzleInputPanel :: Nut
 puzzleInputPanel = Deku.do
   (setOpen /\ open) <- useState false
 
-  let
-    closeButton :: Nut
-    closeButton = D.button
-      Alt.do
-        klass_ "font-medium text-xl text-teal-400 hover:text-teal-300 cursor-pointer"
-        click_ $ setOpen false
-      [text_ "×"]
-
   D.div
   (klass_ $ "relative space-y-2.5 " <> closedWidth)
       [ D.div
@@ -262,10 +254,9 @@ puzzleInputPanel = Deku.do
           )
           [ D.div (klass_ "flex justify-between")
             [ controlLabel "puzzle-input" "Puzzle input"
-            , DekuC.guard open closeButton
+            , DekuC.guard open $ iconButton (setOpen false) "×"
             ]
-          , DekuC.guard (not <$> open)
-            $ D.button (klass_ buttonKlass <|> click_ (setOpen true)) [text_ "Add puzzle input"]
+          , DekuC.guard (not <$> open) $ textButton (setOpen true) "Add puzzle input"
           ]
       ]
     where
@@ -303,11 +294,17 @@ switch name (setState /\ state) =
       klass_ "switch"
     []
 
+textButton :: Effect Unit -> String -> Nut
+textButton = styledButton "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
+
+iconButton :: Effect Unit -> String -> Nut
+iconButton = styledButton "font-medium text-xl text-teal-400 hover:text-teal-300 cursor-pointer"
+
+styledButton :: String -> Effect Unit -> String -> Nut
+styledButton klass onClick label = D.button (klass_ klass <|> click_ onClick) [text_ label]
+
 containerKlass :: String
 containerKlass = "px-4 pt-2 pb-3 bg-slate-700 rounded-lg border-2 border-slate-600 min-w-max"
-
-buttonKlass :: String
-buttonKlass = "py-0.5 px-2 rounded border border-teal-400 text-teal-400 text-sm font-medium bg-teal-500/10 hover:bg-teal-500/25"
 
 maybeFollow :: Maybe Point -> Maybe Point -> Maybe Point
 maybeFollow tailM headM = do
