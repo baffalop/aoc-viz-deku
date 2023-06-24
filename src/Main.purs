@@ -25,7 +25,7 @@ import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
 import Deku.Control (text, text_)
 import Deku.Control as DekuC
-import Deku.Core (Domable, Nut, fixed)
+import Deku.Core (Domable, Nut)
 import Deku.DOM as D
 import Deku.Do as Deku
 import Deku.Hooks (useEffect, useMemoized, useState, useState')
@@ -241,19 +241,24 @@ ropeSegment klasses segment = Deku.do
 
 puzzleInputModal :: Nut
 puzzleInputModal = Deku.do
-  (toggleOpen /\ setOpen /\ open) <- useToggle false
+  (toggleOpen /\ _ /\ open) <- useToggle false
 
   D.div
-    (klass_ " relative space-y-2.5 w-44")
+    (klass_ $ "relative space-y-2.5 " <> closedWidth)
     [ D.div
-        Alt.do
-          klass $ pure (containerKlass <> " space-y-2.5 absolute z-10 ")
-            <> (open <#> if _ then "right-0 top-0 w-96 h-72" else "inset-0")
+        (klass ado
+          dimensions <- open <#> if _
+            then "right-0 top-0 w-96 h-72 shadow-xl"
+            else "inset-0 " <> closedWidth
+          in i containerKlass" space-y-2.5 absolute z-10 transition-all duration-300 "dimensions
+        )
         [ controlLabel "puzzle-input" "Puzzle input"
         , DekuC.guard (not <$> open)
           $ D.button (klass_ buttonKlass <|> click_ toggleOpen) [text_ "Add puzzle input"]
         ]
     ]
+  where
+    closedWidth = "w-44"
 
 segmentWeightPx :: Number
 segmentWeightPx = 24.0
