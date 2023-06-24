@@ -23,7 +23,7 @@ import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
 import Deku.Attribute (cb, (!:=), (<:=>))
 import Deku.Attributes (klass, klass_, style)
-import Deku.Control (text, text_)
+import Deku.Control (text, text_, (<#~>))
 import Deku.Control as DekuC
 import Deku.Core (Domable, Nut)
 import Deku.DOM as D
@@ -51,6 +51,7 @@ import Web.Event.Event (currentTarget, stopPropagation)
 import Web.Event.Event as WebEvent
 import Web.HTML (window)
 import Web.UIEvent.MouseEvent (fromEvent) as Mouse
+import Deku.DOM.Elt.Textarea (textarea) as D
 
 type Point = { x :: Int, y :: Int }
 type Delta = { x :: Number, y :: Number }
@@ -257,12 +258,17 @@ puzzleInputPanel = Deku.do
     [ D.div
         Alt.do
           D.OnTransitionend !:= transitionend
-          klass $ i containerKlass" space-y-2.5 absolute z-10 transition-all duration-300 " <$> transitionKlass
+          klass $ i containerKlass" flex flex-col gap-y-2.5 absolute z-10 transition-all duration-300 " <$> transitionKlass
         [ D.div (klass_ "flex justify-between")
           [ controlLabel "puzzle-input" "Puzzle input"
           , DekuC.guard open $ iconButton (setOpen false) "×"
           ]
-        , DekuC.guard (not <$> open) $ textButton (setOpen true) "Add puzzle input"
+        , open <#~> if _
+          then D.textarea
+            Alt.do
+              klass_ "bg-slate-600 outline-none py-1.5 px-2.5 w-full h-full"
+            []
+          else textButton (setOpen true) "Add puzzle input"
         ]
     ]
     where
