@@ -243,22 +243,33 @@ puzzleInputPanel :: Nut
 puzzleInputPanel = Deku.do
   (setOpen /\ open) <- useState false
 
+  let
+    closeButton :: Nut
+    closeButton = D.button
+      Alt.do
+        klass_ "font-medium text-xl text-teal-400 hover:text-teal-300 cursor-pointer"
+        click_ $ setOpen false
+      [text_ "×"]
+
   D.div
-    (klass_ $ "relative space-y-2.5 " <> closedWidth)
-    [ D.div
-        (klass ado
-          dimensions <- open <#> if _
-            then "right-0 top-0 w-96 h-72 shadow-xl"
-            else "inset-0 " <> closedWidth
-          in i containerKlass" space-y-2.5 absolute z-10 transition-all duration-300 "dimensions
-        )
-        [ controlLabel "puzzle-input" "Puzzle input"
-        , DekuC.guard (not <$> open)
-          $ D.button (klass_ buttonKlass <|> click_ (setOpen true)) [text_ "Add puzzle input"]
-        ]
-    ]
-  where
-    closedWidth = "w-44"
+  (klass_ $ "relative space-y-2.5 " <> closedWidth)
+      [ D.div
+          (klass ado
+            dimensions <- open <#> if _
+              then "right-0 top-0 w-96 h-72 shadow-xl"
+              else "inset-0 " <> closedWidth
+            in i containerKlass" space-y-2.5 absolute z-10 transition-all duration-300 "dimensions
+          )
+          [ D.div (klass_ "flex justify-between")
+            [ controlLabel "puzzle-input" "Puzzle input"
+            , DekuC.guard open closeButton
+            ]
+          , DekuC.guard (not <$> open)
+            $ D.button (klass_ buttonKlass <|> click_ (setOpen true)) [text_ "Add puzzle input"]
+          ]
+      ]
+    where
+      closedWidth = "w-44"
 
 segmentWeightPx :: Number
 segmentWeightPx = 24.0
