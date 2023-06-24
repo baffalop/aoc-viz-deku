@@ -142,7 +142,7 @@ main = runInBody Deku.do
             ]
         , controlPanel "grow" "Grow as I move" $ switch "grow" growState
         , controlPanel "motor" "Motor" $ switch "motor" motorState
-        , puzzleInputModal
+        , puzzleInputPanel
         ]
     , D.div
         Alt.do
@@ -239,8 +239,8 @@ ropeSegment klasses segment = Deku.do
       { x: -1.0, y: 0.0 } -> 0.5
       d -> (d.x - 2.0) * (-0.125) * signum d.y
 
-puzzleInputModal :: Nut
-puzzleInputModal = Deku.do
+puzzleInputPanel :: Nut
+puzzleInputPanel = Deku.do
   (toggleOpen /\ _ /\ open) <- useToggle false
 
   D.div
