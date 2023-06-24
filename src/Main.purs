@@ -243,13 +243,16 @@ puzzleInputModal :: Nut
 puzzleInputModal = Deku.do
   (toggleOpen /\ setOpen /\ open) <- useToggle false
 
-  controlPanel "input" "Input" $ D.div (klass_ "relative")
-    [ D.button (klass_ buttonKlass <|> click_ toggleOpen) [text_ "Add puzzle input"]
-    , DekuC.guard open
-        $ D.div
-          Alt.do
-            klass_ $ containerKlass <> " absolute right-0 top-full mt-2 z-10 w-96 h-52"
-          []
+  D.div
+    (klass_ " relative space-y-2.5 w-44")
+    [ D.div
+        Alt.do
+          klass $ pure (containerKlass <> " space-y-2.5 absolute z-10 ")
+            <> (open <#> if _ then "right-0 top-0 w-96 h-72" else "inset-0")
+        [ controlLabel "puzzle-input" "Puzzle input"
+        , DekuC.guard (not <$> open)
+          $ D.button (klass_ buttonKlass <|> click_ toggleOpen) [text_ "Add puzzle input"]
+        ]
     ]
 
 segmentWeightPx :: Number
@@ -261,13 +264,17 @@ segmentHalfWeightPx = segmentWeightPx / 2.0
 controlPanel :: forall lock payload. String -> String -> Domable lock payload -> Domable lock payload
 controlPanel name label contents =
   D.div (klass_ $ containerKlass <> " max-w-max space-y-2.5")
-    [ D.label
-        Alt.do
-          D.For !:= name
-          klass_ "font-bold italic text-slate-300 block"
-        [text_ label]
+    [ controlLabel name label
     , contents
     ]
+
+controlLabel :: String -> String -> Nut
+controlLabel name label =
+  D.label
+    Alt.do
+      D.For !:= name
+      klass_ "font-bold italic text-slate-300 block"
+    [text_ label]
 
 switch :: String -> (Boolean -> Effect Unit) /\ Event Boolean -> Nut
 switch name (setState /\ state) =
