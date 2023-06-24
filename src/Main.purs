@@ -244,6 +244,7 @@ ropeSegment klasses segment = Deku.do
 puzzleInputPanel :: Nut
 puzzleInputPanel = Deku.do
   (setOpen /\ open) <- useState false
+
   { transitionKlass, transitionEnd, transitionState } <- transition open
     { gone: "inset-0"
     , here: "right-0 top-0 shadow-xl"
@@ -258,17 +259,23 @@ puzzleInputPanel = Deku.do
     [ D.div
         Alt.do
           D.OnTransitionend !:= transitionEnd
-          klass $ i containerKlass" flex flex-col gap-y-2.5 absolute z-10 overflow-hidden transition-all duration-300 " <$> transitionKlass
+          klass $ i containerKlass" flex flex-col gap-y-2.5 absolute z-10 transition-all duration-300 " <$> transitionKlass
         [ D.div (klass_ "flex justify-between items-start")
           [ controlLabel "puzzle-input" "Puzzle input"
           , DekuC.guard open $ iconButton (setOpen false) "×"
           ]
         , transitionState <#~> case _ of
             Gone -> textButton (setOpen true) "Add puzzle input"
-            Here -> D.textarea
+            Here -> D.form
               Alt.do
-                klass_ "bg-slate-600 outline-none py-1.5 px-2.5 w-full h-full"
-              []
+                klass_ "h-full flex flex-col gap-2.5 items-end"
+                D.OnSubmit !:= setOpen false
+              [ D.textarea
+                  Alt.do
+                    klass_ "bg-slate-600 outline-none py-1.5 px-2.5 w-full h-full"
+                  []
+              , textButton mempty "Play"
+              ]
             _ -> mempty
         ]
     ]
