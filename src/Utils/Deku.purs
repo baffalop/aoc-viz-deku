@@ -2,6 +2,7 @@ module Utils.Deku
   ( Hook
   , transition
   , useToggle
+  , TransitionState(..)
   )
   where
 
@@ -29,6 +30,12 @@ type TransitionKlasses =
   , leaveTo :: String
   }
 
+type Transition =
+  { transitionKlass :: Event String
+  , transitionEnd :: Effect Unit
+  , transitionState :: Event TransitionState
+  }
+
 data TransitionState
   = BeforeEnter
   | Entering
@@ -39,7 +46,7 @@ data TransitionState
   | AfterLeave
   | Gone
 
-transition :: Event Boolean -> TransitionKlasses -> Hook (Effect Unit /\ Event String)
+transition :: Event Boolean -> TransitionKlasses -> Hook Transition
 transition exists klasses f = Deku.do
   setState /\ state <- useState Gone
   onTransitionend /\ transitionend <- useState'
@@ -73,7 +80,11 @@ transition exists klasses f = Deku.do
       AfterLeave  -> klasses.gone
       Gone        -> klasses.gone
 
-  f $ onTransitionend unit /\ klass
+  f
+    { transitionKlass: klass
+    , transitionEnd: onTransitionend unit
+    , transitionState: state
+    }
 
 useToggle :: Boolean -> Hook (Effect Unit /\ (Boolean -> Effect Unit) /\ Event Boolean)
 useToggle initial f = Deku.do

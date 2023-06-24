@@ -41,7 +41,7 @@ import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Utils.Basics (maybeIf, closest, cycleTo)
-import Utils.Deku (Hook, transition)
+import Utils.Deku (Hook, TransitionState(..), transition)
 import Utils.FRP (dedup)
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
@@ -189,7 +189,7 @@ makeRope initialHead length grow incLength f = unfold 1 (Just <$> initialHead) [
 
 ropeSegment :: String -> Event (Maybe Segment) -> Nut
 ropeSegment klasses segment = Deku.do
-  transitionend /\ transitionKlass <- transition (isJust <$> segment)
+  { transitionKlass, transitionEnd } <- transition (isJust <$> segment)
     { gone: "hidden"
     , here: "absolute"
     , enterFrom: "!w-0 !h-0"
@@ -201,7 +201,7 @@ ropeSegment klasses segment = Deku.do
 
   D.div
     Alt.do
-      D.OnTransitionend !:= transitionend
+      D.OnTransitionend !:= transitionEnd
       klass
         $ pure (klasses <> " rounded-full border transition-all duration-200 left-1/2 top-1/2 ")
         <> transitionKlass
@@ -244,7 +244,7 @@ ropeSegment klasses segment = Deku.do
 puzzleInputPanel :: Nut
 puzzleInputPanel = Deku.do
   (setOpen /\ open) <- useState false
-  transitionend /\ transitionKlass <- transition open
+  { transitionKlass, transitionEnd, transitionState } <- transition open
     { gone: "inset-0"
     , here: "right-0 top-0 shadow-xl"
     , enterFrom: closedWidth
@@ -257,18 +257,19 @@ puzzleInputPanel = Deku.do
   D.div (klass_ $ "relative space-y-2.5 " <> closedWidth)
     [ D.div
         Alt.do
-          D.OnTransitionend !:= transitionend
-          klass $ i containerKlass" flex flex-col gap-y-2.5 absolute z-10 transition-all duration-300 " <$> transitionKlass
+          D.OnTransitionend !:= transitionEnd
+          klass $ i containerKlass" flex flex-col gap-y-2.5 absolute z-10 overflow-hidden transition-all duration-300 " <$> transitionKlass
         [ D.div (klass_ "flex justify-between items-start")
           [ controlLabel "puzzle-input" "Puzzle input"
           , DekuC.guard open $ iconButton (setOpen false) "×"
           ]
-        , open <#~> if _
-          then D.textarea
-            Alt.do
-              klass_ "bg-slate-600 outline-none py-1.5 px-2.5 w-full h-full"
-            []
-          else textButton (setOpen true) "Add puzzle input"
+        , transitionState <#~> case _ of
+            Gone -> textButton (setOpen true) "Add puzzle input"
+            Here -> D.textarea
+              Alt.do
+                klass_ "bg-slate-600 outline-none py-1.5 px-2.5 w-full h-full"
+              []
+            _ -> mempty
         ]
     ]
     where
