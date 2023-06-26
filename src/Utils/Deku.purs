@@ -1,5 +1,6 @@
 module Utils.Deku
-  ( Hook
+  ( textInput_
+  , Hook
   , transition
   , useToggle
   , TransitionState(..)
@@ -17,8 +18,22 @@ import Effect (Effect)
 import FRP.Event (Event)
 import FRP.Event.AnimationFrame (animationFrame)
 import FRP.Event.Class ((*|>), (<*|>))
+import Deku.Attribute (Attribute, cb, (!:=))
+import Deku.DOM.Attr.OnInput (OnInput(OnInput)) as D
+import Data.Foldable (traverse_)
+import QualifiedDo.Alt as Alt
+import Web.HTML.HTMLInputElement as InputEl
+import Web.HTML.HTMLTextAreaElement as TextAreaEl
+import Web.Event.Event (currentTarget)
 
 type Hook a = forall lock payload. (a -> Domable lock payload) -> Domable lock payload
+
+textInput_ :: forall e . (String -> Effect Unit) -> Event (Attribute e)
+textInput_ push = D.OnInput !:= cb \ev -> traverse_ (push =<< _) do
+  target <- currentTarget ev
+  Alt.do
+    InputEl.value <$> InputEl.fromEventTarget target
+    TextAreaEl.value <$> TextAreaEl.fromEventTarget target
 
 type TransitionKlasses =
   { here :: String
@@ -92,3 +107,4 @@ useToggle initial f = Deku.do
   setState /\ state <- useState initial
   useEffect (toggled *|> state) $ setState <<< not
   f $ toggle unit /\ setState /\ state
+
