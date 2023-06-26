@@ -14,6 +14,7 @@
   , "interpolate"
   , "maybe"
   , "numbers"
+  , "parsing"
   , "point-free"
   , "prelude"
   , "qualified-do"

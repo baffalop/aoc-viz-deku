@@ -47,11 +47,14 @@ import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
 import Web.DOM.Element (getBoundingClientRect)
 import Web.DOM.Element as El
-import Web.Event.Event (currentTarget, stopPropagation)
+import Web.Event.Event (currentTarget, preventDefault, stopPropagation)
 import Web.Event.Event as WebEvent
 import Web.HTML (window)
 import Web.UIEvent.MouseEvent (fromEvent) as Mouse
 import Deku.DOM.Elt.Textarea (textarea) as D
+import Data.Either (Either(..))
+import Parsing (ParseError, parseErrorMessage, runParser)
+import Parsing (fail) as P
 
 type Point = { x :: Int, y :: Int }
 type Delta = { x :: Number, y :: Number }
@@ -99,6 +102,8 @@ main = runInBody Deku.do
   useEffect (filter (_ == "KeyG") Key.down *|> grow) $ setGrowMode <<< not
   useEffect (filter (_ == "KeyM") Key.down *|> motor) $ setMotor <<< not
 
+  setInstructions /\ instructions <- useState ([] :: Array Point)
+
   let
     clock :: Event Unit
     clock = unit <$ interval 100
@@ -143,7 +148,7 @@ main = runInBody Deku.do
             ]
         , controlPanel "grow" "Grow as I move" $ switch "grow" growState
         , controlPanel "motor" "Motor" $ switch "motor" motorState
-        , puzzleInputPanel
+        , puzzleInputPanel setInstructions
         ]
     , D.div
         Alt.do
@@ -241,10 +246,19 @@ ropeSegment klasses segment = Deku.do
       { x: -1.0, y: 0.0 } -> 0.5
       d -> (d.x - 2.0) * (-0.125) * signum d.y
 
-puzzleInputPanel :: Nut
-puzzleInputPanel = Deku.do
+puzzleInputPanel :: (Array Point -> Effect Unit) -> Nut
+puzzleInputPanel setInstructions = Deku.do
   (setOpen /\ open) <- useState false
   setInput /\ input <- useHot ""
+  submit /\ submitted <- useState'
+  setError /\ error <- useState (Nothing :: Maybe ParseError)
+
+  useEffect (submitted *|> input) $ parseInput >>> case _ of
+    Left err -> setError $ Just err
+    Right instructions -> do
+      setError Nothing
+      setInstructions instructions
+      setOpen false
 
   { transitionKlass, transitionEnd, transitionState } <- transition open
     { gone: "inset-0"
@@ -270,19 +284,25 @@ puzzleInputPanel = Deku.do
             Here -> D.form
               Alt.do
                 klass_ "h-full flex flex-col gap-2.5 items-end"
-                D.OnSubmit !:= setOpen false
+                D.OnSubmit !:= cb \e -> preventDefault e *> submit unit
               [ D.textarea
                   Alt.do
                     textInput_ setInput
                     klass_ "bg-slate-600 outline-none py-1.5 px-2.5 w-full h-full"
                   [text input]
-              , textButton mempty "Play"
+              , D.div (klass_ "flex w-full justify-between items-start")
+                  [ D.span (klass_ "text-red-300") [text $ parseErrorMessage <$> compact error]
+                  , textButton mempty "Play"
+                  ]
               ]
             _ -> mempty
         ]
     ]
-    where
-      closedWidth = "w-44"
+  where
+    closedWidth = "w-44"
+
+parseInput :: String -> Either ParseError (Array Point)
+parseInput input = runParser input $ P.fail "hi"
 
 segmentWeightPx :: Number
 segmentWeightPx = 24.0
