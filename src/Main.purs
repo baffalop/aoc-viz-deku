@@ -28,7 +28,7 @@ import Deku.Control as DekuC
 import Deku.Core (Domable, Nut)
 import Deku.DOM as D
 import Deku.Do as Deku
-import Deku.Hooks (useEffect, useMemoized, useState, useState')
+import Deku.Hooks (useEffect, useHot, useMemoized, useState, useState')
 import Deku.Listeners (click, click_, slider_)
 import Deku.Pursx ((~~))
 import Deku.Toplevel (runInBody)
@@ -41,12 +41,12 @@ import Heterogeneous.Mapping (hmap)
 import QualifiedDo.Alt as Alt
 import Type.Proxy (Proxy(..))
 import Utils.Basics (maybeIf, closest, cycleTo)
-import Utils.Deku (Hook, TransitionState(..), transition)
+import Utils.Deku (Hook, TransitionState(..), textInput_, transition)
 import Utils.FRP (dedup)
 import Web.CSSOM.MouseEvent (offsetX, offsetY) as Mouse
 import Web.CSSOMView.Window (devicePixelRatio)
 import Web.DOM.Element (getBoundingClientRect)
-import Web.DOM.Element as Element
+import Web.DOM.Element as El
 import Web.Event.Event (currentTarget, stopPropagation)
 import Web.Event.Event as WebEvent
 import Web.HTML (window)
@@ -244,6 +244,7 @@ ropeSegment klasses segment = Deku.do
 puzzleInputPanel :: Nut
 puzzleInputPanel = Deku.do
   (setOpen /\ open) <- useState false
+  setInput /\ input <- useHot ""
 
   { transitionKlass, transitionEnd, transitionState } <- transition open
     { gone: "inset-0"
@@ -272,8 +273,9 @@ puzzleInputPanel = Deku.do
                 D.OnSubmit !:= setOpen false
               [ D.textarea
                   Alt.do
+                    textInput_ setInput
                     klass_ "bg-slate-600 outline-none py-1.5 px-2.5 w-full h-full"
-                  []
+                  [text input]
               , textButton mempty "Play"
               ]
             _ -> mempty
@@ -368,7 +370,7 @@ vectorFromKey = map Vector <<< case _ of
 mousePoint :: WebEvent.Event -> Effect (Maybe Point)
 mousePoint ev = do
   pixelRatio <- window >>= devicePixelRatio
-  maybeRect <- traverse getBoundingClientRect $ Element.fromEventTarget =<< currentTarget ev
+  maybeRect <- traverse getBoundingClientRect $ El.fromEventTarget =<< currentTarget ev
   pure do
     mouseEvent <- Mouse.fromEvent ev
     rect <- maybeRect
