@@ -263,11 +263,11 @@ puzzleInputPanel setInstructions = Deku.do
   { transitionKlass, transitionEnd, transitionState } <- transition open
     { gone: "inset-0"
     , here: "right-0 top-0 shadow-xl"
-    , enterFrom: closedWidth
+    , enterFrom: closedWidth <> " h-24"
     , enterTo: "w-96 h-72"
     , entered: "w-96 h-72"
     , leaveFrom: "w-96 h-72"
-    , leaveTo: closedWidth
+    , leaveTo: closedWidth <> " h-24"
     }
 
   D.div (klass_ $ "relative space-y-2.5 " <> closedWidth)
