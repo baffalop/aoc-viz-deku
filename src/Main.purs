@@ -8,7 +8,7 @@ import Prelude hiding (add)
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
 import Control.Apply (lift2)
-import Data.Array (replicate, zipWith, (:))
+import Data.Array (replicate, zipWith, (:), (!!))
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
@@ -57,7 +57,6 @@ import Parsing (ParseError, parseErrorMessage, runParser)
 import Parsing.Combinators.Array as P
 import Parsing.String as P
 import Parsing.String.Basic as P
-import Debug (spy)
 
 type Point = { x :: Int, y :: Int }
 type Delta = { x :: Number, y :: Number }
@@ -114,11 +113,21 @@ main = runInBody Deku.do
     keyControl :: Event Motion
     keyControl = filterMap vectorFromKey Key.down
 
+    playingInstruction :: Event (Maybe Point)
+    playingInstruction = ado
+      instructions' <- instructions
+      index <- fold (#) 0 Alt.do
+        instructions $> const 0
+        clock $> (_ + 1)
+      in instructions' !! index
+
     head :: Event Point
     head = pure origin <|> fold applyMotion origin Alt.do
-      keyControl
-      gate ((&&) <$> motor <*> (target <#> isNothing)) clock *|> keyControl
-      gate (target <#> isJust) clock *|> (Target <$> compact target)
+      gate (isNothing <$> playingInstruction) Alt.do
+        keyControl
+        gate ((&&) <$> motor <*> (target <#> isNothing)) clock *|> keyControl
+        gate (target <#> isJust) clock *|> (Target <$> compact target)
+      compact $ clock *|> (map Vector <$> playingInstruction)
 
     targetEl :: Nut
     targetEl = ropeSegment "border-yellow-500 bg-yellow-500/40" $ target <#> map \t -> { head: t, tail: t }
@@ -260,7 +269,7 @@ puzzleInputPanel setInstructions = Deku.do
     Left err -> setError $ Just err
     Right instructions -> do
       setError Nothing
-      setInstructions $ spy "instructions" instructions
+      setInstructions instructions
       setOpen false
 
   { transitionKlass, transitionEnd, transitionState } <- transition open
