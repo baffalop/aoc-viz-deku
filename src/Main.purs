@@ -8,7 +8,7 @@ import Prelude hiding (add)
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
 import Control.Apply (lift2)
-import Data.Array (zipWith, (:))
+import Data.Array (replicate, zipWith, (:))
 import Data.Array as Array
 import Data.Compactable (compact)
 import Data.Filterable (filter, filterMap)
@@ -54,7 +54,10 @@ import Web.UIEvent.MouseEvent (fromEvent) as Mouse
 import Deku.DOM.Elt.Textarea (textarea) as D
 import Data.Either (Either(..))
 import Parsing (ParseError, parseErrorMessage, runParser)
-import Parsing (fail) as P
+import Parsing.Combinators.Array as P
+import Parsing.String as P
+import Parsing.String.Basic as P
+import Debug (spy)
 
 type Point = { x :: Int, y :: Int }
 type Delta = { x :: Number, y :: Number }
@@ -257,7 +260,7 @@ puzzleInputPanel setInstructions = Deku.do
     Left err -> setError $ Just err
     Right instructions -> do
       setError Nothing
-      setInstructions instructions
+      setInstructions $ spy "instructions" instructions
       setOpen false
 
   { transitionKlass, transitionEnd, transitionState } <- transition open
@@ -302,7 +305,16 @@ puzzleInputPanel setInstructions = Deku.do
     closedWidth = "w-44"
 
 parseInput :: String -> Either ParseError (Array Point)
-parseInput input = runParser input $ P.fail "hi"
+parseInput input = runParser input $ join <$> P.many do
+  point <- Alt.do
+    P.char 'U' $> { x: 0, y: -1 }
+    P.char 'D' $> { x: 0, y: 1 }
+    P.char 'L' $> { x: -1, y: 0 }
+    P.char 'R' $> { x: 1, y: 0 }
+  _ <- P.char ' '
+  count <- P.intDecimal
+  (P.string "\n" $> unit) <|> P.eof
+  pure $ replicate count point
 
 segmentWeightPx :: Number
 segmentWeightPx = 24.0
