@@ -113,13 +113,13 @@ main = runInBody Deku.do
     keyControl :: Event Motion
     keyControl = filterMap vectorFromKey Key.down
 
+    instructionIndex :: Event Int
+    instructionIndex = fold (#) 0 Alt.do
+      instructions $> const 0
+      clock $> (_ + 1)
+
     playingInstruction :: Event (Maybe Point)
-    playingInstruction = ado
-      instructions' <- instructions
-      index <- fold (#) 0 Alt.do
-        instructions $> const 0
-        clock $> (_ + 1)
-      in instructions' !! index
+    playingInstruction = (!!) <$> instructions <*> instructionIndex
 
     head :: Event Point
     head = pure origin <|> fold applyMotion origin Alt.do
