@@ -6,6 +6,7 @@
   , "debug"
   , "deku"
   , "effect"
+  , "either"
   , "filterable"
   , "foldable-traversable"
   , "heterogeneous"
